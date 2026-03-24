@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, ChevronDown, MoreHorizontal, Pencil, Trash2, LayoutTemplate } from 'lucide-react'
+import { Plus, ChevronDown, MoreHorizontal, Pencil, Trash2, LayoutTemplate, Settings } from 'lucide-react'
+import Link from 'next/link'
 import clsx from 'clsx'
 import { ContentTable } from '@/lib/types'
 
@@ -104,6 +105,14 @@ export function ContentSidebar({
 
             <div className="p-4 flex flex-col gap-1">
                 <h2 className="text-base font-bold text-white mb-3">Task Editor</h2>
+
+                <Link
+                    href="/dashboard/kategori-konten"
+                    className="mb-2 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors text-left cursor-pointer text-zinc-400 hover:bg-[#27272a] hover:text-white"
+                >
+                    <Settings size={15} className="shrink-0 text-amber-400" />
+                    <span className="flex-1 truncate">Kategori Konten</span>
+                </Link>
 
                 <button
                     onClick={onNewTable}

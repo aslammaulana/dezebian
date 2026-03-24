@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Globe, X, FileText, Brain, Search } from 'lucide-react';
+import Link from 'next/link';
+import { Globe, X, FileText, Brain, Search, BrainCircuit, ExternalLink } from 'lucide-react';
 import { BsFillCheckCircleFill } from 'react-icons/bs';
 import { AvailableDocument } from '@/types/chat';
 
@@ -90,6 +91,21 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                         <div className={`absolute top-1 left-1 bg-white w-3 h-3 rounded-full transition-transform ${isHighThinking ? 'translate-x-4' : ''}`} />
                     </div>
                 </div>
+
+                {/* Navigation Links */}
+                <Link
+                    href="/dashboard/memory"
+                    className="p-4 rounded-lg bg-[#1f1f1f] border border-[#2e2e2e] flex items-center justify-between hover:bg-[#27272a] hover:border-[#3a3a3a] transition-colors group"
+                >
+                    <div className="flex flex-col">
+                        <span className="text-sm font-medium text-gray-200 flex items-center gap-2">
+                            <BrainCircuit size={14} className="text-purple-400 group-hover:text-purple-300 transition-colors" />
+                            Memory Manager
+                        </span>
+                        <span className="text-[11px] text-gray-500 mt-0.5">Kelola ingatan jangka menengah & panjang</span>
+                    </div>
+                    <ExternalLink size={16} className="text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+                </Link>
 
                 {/* Knowledge Base */}
                 <div>

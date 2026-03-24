@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 import { Plus, Trash2, PanelLeftOpen, PanelLeftClose, RefreshCw, Pencil, Search, Filter, ArrowUpDown, X, ChevronsUpDown, Brain, Check } from 'lucide-react'
 import clsx from 'clsx'
 import type { ContentTable as ContentTableType } from '@/lib/types'
@@ -94,6 +95,7 @@ export function ContentTable({
         checkbox: 40,
         no: 50,
         topic: 250,
+        view: 80,
         edit: 160,
         status: 170,
         priority: 100,
@@ -377,6 +379,7 @@ export function ContentTable({
                             <col style={{ width: colWidths.checkbox }} />
                             <col style={{ width: colWidths.no }} />
                             <col style={{ width: colWidths.topic }} />
+                            <col style={{ width: colWidths.view }} />
                             <col style={{ width: colWidths.edit }} />
                             <col style={{ width: colWidths.status }} />
                             <col style={{ width: colWidths.priority }} />
@@ -393,6 +396,7 @@ export function ContentTable({
                                 </th>
                                 <th className="border border-[#2e2e2e] py-2 px-3 relative uppercase">NO.{renderResizer('no')}</th>
                                 <th className="border border-[#2e2e2e] py-2 px-3 relative uppercase">{renderSortHeader('TOPIK', 'topic')}{renderResizer('topic')}</th>
+                                <th className="border border-[#2e2e2e] py-2 px-3 relative text-center uppercase">VIEW{renderResizer('view')}</th>
                                 <th className="border border-[#2e2e2e] py-2 px-3 relative text-center uppercase">EDIT{renderResizer('edit')}</th>
                                 <th className="border border-[#2e2e2e] py-2 px-3 relative uppercase">{renderSortHeader('STATUS', 'status')}{renderResizer('status')}</th>
                                 <th className="border border-[#2e2e2e] py-2 px-3 relative uppercase">{renderSortHeader('PRIORITY', 'priority')}{renderResizer('priority')}</th>
@@ -407,12 +411,13 @@ export function ContentTable({
                 </div>
 
                 {/* Tbody scroll container */}
-                <div ref={tbodyScrollRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-auto scrollbar-thin">
+                <div ref={tbodyScrollRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-auto scrollbar">
                     <table className="border-collapse text-left" style={{ tableLayout: 'fixed', width: totalWidth }}>
                         <colgroup>
                             <col style={{ width: colWidths.checkbox }} />
                             <col style={{ width: colWidths.no }} />
                             <col style={{ width: colWidths.topic }} />
+                            <col style={{ width: colWidths.view }} />
                             <col style={{ width: colWidths.edit }} />
                             <col style={{ width: colWidths.status }} />
                             <col style={{ width: colWidths.priority }} />
@@ -441,6 +446,15 @@ export function ContentTable({
                                                 {row.topic || <span className="text-zinc-600 font-normal italic">Untitled</span>}
                                             </button>
                                         </td>
+                                        <td className="border border-[#2e2e2e] py-1.5 px-2 text-center">
+                                            <Link
+                                                href={`/dashboard/reels-content/${row.id}/view`}
+                                                className="inline-flex items-center justify-center gap-1 rounded-sm bg-[#006239] px-2.5 py-1 text-xs text-white hover:bg-dz-primary hover:text-white transition-colors cursor-pointer font-semibold"
+                                                title="Lihat Detail Penuh"
+                                            >
+                                                VIEW
+                                            </Link>
+                                        </td>
                                         <td className="border border-[#2e2e2e] py-2 px-3">
                                             <div className="flex items-center justify-center gap-1.5">
                                                 <button
@@ -454,8 +468,8 @@ export function ContentTable({
                                                     disabled={ragSaving === row.id}
                                                     title="Kirim ke Knowledge Base (RAG)"
                                                     className={`inline-flex items-center gap-1 rounded-sm px-2 py-1 text-xs transition-colors cursor-pointer font-semibold  disabled:cursor-not-allowed ${ragDone === row.id
-                                                            ? 'bg-dz-primary/20 text-dz-primary'
-                                                            : 'bg-[#1e1e1e] text-zinc-500 hover:bg-dz-primary/20 hover:text-dz-primary border border-[#2e2e2e]'
+                                                        ? 'bg-dz-primary/20 text-dz-primary'
+                                                        : 'bg-[#1e1e1e] text-zinc-500 hover:bg-dz-primary/20 hover:text-dz-primary border border-[#2e2e2e]'
                                                         }`}
                                                 >
                                                     {ragDone === row.id
@@ -541,6 +555,7 @@ export function ContentTable({
                                 <td className="border border-[#2e2e2e] py-2 px-3 text-center opacity-50 group-hover/add:opacity-100 text-zinc-500">+</td>
                                 <td className="border border-[#2e2e2e] py-2 px-3" />
                                 <td className="border border-[#2e2e2e] py-2 px-3 text-zinc-600 group-hover/add:text-zinc-400 text-xs">Click to add a new content...</td>
+                                <td className="border border-[#2e2e2e] py-2 px-3" />
                                 <td className="border border-[#2e2e2e] py-2 px-3" />
                                 <td className="border border-[#2e2e2e] py-2 px-3" />
                                 <td className="border border-[#2e2e2e] py-2 px-3" />
