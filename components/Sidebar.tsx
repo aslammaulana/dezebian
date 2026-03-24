@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Compass, Video, Settings, X, Users, Telescope } from "lucide-react"
+import { Compass, Video, Settings, X, Users, Telescope, MessageSquare, BookOpen, BrainCircuit } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import clsx from "clsx"
@@ -16,6 +16,9 @@ const menuItems = [
     { href: "/dashboard/reels-content", icon: Video, label: "Reels Content", exact: false },
     { href: "/dashboard/competitor", icon: Users, label: "Competitor", exact: false },
     { href: "/dashboard/atm", icon: Telescope, label: "ATM", exact: false },
+    { href: "/dashboard/chat", icon: MessageSquare, label: "Chat Natasha", exact: false },
+    { href: "/dashboard/knowledge", icon: BookOpen, label: "Knowledge Base", exact: false },
+    { href: "/dashboard/memory", icon: BrainCircuit, label: "Memory Manager", exact: false },
     { href: "/dashboard/kategori-konten", icon: Settings, label: "Kategori Konten", exact: false },
 ]
 

@@ -60,14 +60,6 @@ function AtmSidebar({ isOpen, entry, isNew, onClose, onSave }: SidebarProps) {
 
     return (
         <>
-            {/* Backdrop */}
-            {isOpen && (
-                <div
-                    className="fixed inset-0 z-40 bg-black/40"
-                    onClick={onClose}
-                />
-            )}
-
             {/* Sidebar panel */}
             <aside
                 className={clsx(
