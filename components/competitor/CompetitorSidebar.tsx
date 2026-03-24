@@ -66,7 +66,7 @@ export function CompetitorSidebar({
                         <button
                             onClick={() => onSelectTable(t.id)}
                             className={clsx(
-                                'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors text-left',
+                                'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors text-left cursor-pointer',
                                 isActive
                                     ? 'bg-[#27272a] text-white'
                                     : 'text-zinc-400 hover:bg-[#27272a] hover:text-white'
@@ -110,7 +110,7 @@ export function CompetitorSidebar({
                 <button
                     onClick={() => onSelectTable('all')}
                     className={clsx(
-                        'mb-2 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors text-left',
+                        'mb-2 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors text-left cursor-pointer',
                         activeTableId === 'all'
                             ? 'bg-[#27272a] text-white'
                             : 'text-zinc-400 hover:bg-[#27272a] hover:text-white'
