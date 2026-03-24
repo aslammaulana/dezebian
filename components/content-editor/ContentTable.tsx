@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Plus, Trash2, PanelLeftOpen, PanelLeftClose, RefreshCw, Pencil, Search, Filter, ArrowUpDown, X, ChevronsUpDown } from 'lucide-react'
+import { Plus, Trash2, PanelLeftOpen, PanelLeftClose, RefreshCw, Pencil, Search, Filter, ArrowUpDown, X, ChevronsUpDown, Brain, Check } from 'lucide-react'
 import clsx from 'clsx'
 import type { ContentTable as ContentTableType } from '@/lib/types'
 import { ReelsContent, ContentStatus, Priority } from '@/lib/types'
@@ -63,6 +63,8 @@ export function ContentTable({
 }: ContentTableProps) {
     const [selectedRows, setSelectedRows] = useState<string[]>([])
     const [isRefreshing, setIsRefreshing] = useState(false)
+    const [ragSaving, setRagSaving] = useState<string | null>(null)   // row.id yang sedang disimpan
+    const [ragDone, setRagDone] = useState<string | null>(null)       // row.id yang baru selesai
     const [sortField, setSortField] = useState<string | null>(null)
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
@@ -189,6 +191,60 @@ export function ContentTable({
         if (!onRefresh || isRefreshing) return
         setIsRefreshing(true)
         try { await onRefresh() } finally { setIsRefreshing(false) }
+    }
+
+    const handleSendToRag = async (row: ReelsContent) => {
+        setRagSaving(row.id)
+        try {
+            const lines: string[] = []
+            const add = (label: string, val?: string | null) => { if (val?.trim()) lines.push(`${label}: ${val.trim()}`) }
+
+            add('Topik', row.topic)
+            add('Produk', row.product_name)
+            add('Tanggal Posting', row.posting_date)
+            add('Status', row.status)
+            add('Format', row.format)
+            add('Hook', row.hook)
+            add('Priority', row.priority)
+            add('Content Type', row.content_type)
+            add('Section', row.section)
+            add('Sub Section', row.sub_section)
+            add('Target Audience', row.target_audience)
+            add('Funnel', row.funnel)
+            add('Offer Status', row.offer_status)
+            add('Brand', row.brand)
+            add('Visual Link', row.visual_link)
+            add('Visual Description', row.visual_description)
+            add('Attention (AIDA)', row.attention)
+            add('Interest (AIDA)', row.interest)
+            add('Desire (AIDA)', row.desire)
+            add('Action (AIDA)', row.action)
+            add('Voiceover Script', row.voiceover_script)
+            add('Caption', row.caption)
+            add('Hashtag', row.hashtag)
+            add('Audio', row.audio)
+            add('Reference Link', row.reference_link)
+            add('Location', row.location)
+
+            const title = `[Reels] ${row.topic || 'Untitled'}`
+            const context = lines.join('\n')
+
+            const res = await fetch('/api/knowledge/save-rag', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, context }),
+            })
+            if (!res.ok) {
+                const err = await res.json()
+                throw new Error(err.error || 'Gagal menyimpan RAG')
+            }
+            setRagDone(row.id)
+            setTimeout(() => setRagDone(null), 2500)
+        } catch (err: any) {
+            alert('Gagal kirim ke RAG: ' + err.message)
+        } finally {
+            setRagSaving(null)
+        }
     }
 
     const handleSortToggle = (field: string) => {
@@ -385,13 +441,31 @@ export function ContentTable({
                                                 {row.topic || <span className="text-zinc-600 font-normal italic">Untitled</span>}
                                             </button>
                                         </td>
-                                        <td className="border border-[#2e2e2e] py-2 px-3 text-center">
-                                            <button
-                                                onClick={() => onEditContent(row.id)}
-                                                className="inline-flex items-center gap-1.5 rounded-sm bg-[#27272a] px-2.5 py-1 text-xs text-zinc-300 hover:bg-dz-primary hover:text-white transition-colors cursor-pointer"
-                                            >
-                                                <Pencil size={11} /> EDIT
-                                            </button>
+                                        <td className="border border-[#2e2e2e] py-2 px-3">
+                                            <div className="flex items-center justify-center gap-1.5">
+                                                <button
+                                                    onClick={() => onEditContent(row.id)}
+                                                    className="inline-flex items-center gap-1.5 rounded-sm bg-[#27272a] px-2.5 py-1 text-xs text-zinc-300 hover:bg-dz-primary hover:text-white transition-colors cursor-pointer"
+                                                >
+                                                    <Pencil size={11} /> EDIT
+                                                </button>
+                                                <button
+                                                    onClick={() => handleSendToRag(row)}
+                                                    disabled={ragSaving === row.id}
+                                                    title="Kirim ke Knowledge Base (RAG)"
+                                                    className={`inline-flex items-center gap-1 rounded-sm px-2 py-1 text-xs transition-colors cursor-pointer disabled:cursor-not-allowed ${ragDone === row.id
+                                                            ? 'bg-dz-primary/20 text-dz-primary'
+                                                            : 'bg-[#1e1e1e] text-zinc-500 hover:bg-dz-primary/20 hover:text-dz-primary border border-[#2e2e2e]'
+                                                        }`}
+                                                >
+                                                    {ragDone === row.id
+                                                        ? <><Check size={10} /> RAG</>
+                                                        : ragSaving === row.id
+                                                            ? <RefreshCw size={10} className="animate-spin" />
+                                                            : <><Brain size={10} /> RAG</>
+                                                    }
+                                                </button>
+                                            </div>
                                         </td>
                                         <td className="border border-[#2e2e2e] p-3">
                                             <PopoverSelect
