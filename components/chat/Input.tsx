@@ -123,7 +123,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
                             <button
                                 type="submit"
                                 disabled={!inputValue.trim() || isLoading}
-                                className="w-10 h-10 rounded-full bg-dz-primary hover:bg-[#007042] text-white flex items-center justify-center transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed text-[20px]"
+                                className="w-10 h-10 rounded-full bg-[#5686fe] hover:bg-[#4a75e6] text-white flex items-center justify-center transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed text-[20px]"
                             >
                                 <BiArrowToTop />
                             </button>

@@ -118,8 +118,8 @@ export default function ChatClient() {
                 <ChatHeader
                     uploadedFilesCount={selectedDocumentIds.length}
                     isWebSearchEnabled={isWebSearchEnabled}
-                    isSidebarOpen={isSidebarOpen}
-                    onMenuClick={() => setIsSidebarOpen(prev => !prev)}
+                    isSidebarOpen={false}
+                    onMenuClick={() => window.dispatchEvent(new Event('toggleMobileSidebar'))}
                 />
                 <ChatArea
                     ref={chatAreaRef}
