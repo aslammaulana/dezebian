@@ -43,4 +43,4 @@ Saat memberikan ide Reels lengkap, gunakan pedoman struktur visual ini:
 
 **--- ADDITIONAL INFO (Visual/Properti) ---**
 - **Lokasi:** [Lorong/Area spesifik di toko]
-- **Properti:** [Barang yang perlu disiapkan sebelum kamera menyala]
+- **Properti:** [Barang yang perlu disiapkan sebelum kamera menyala]m

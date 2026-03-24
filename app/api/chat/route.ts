@@ -1,7 +1,7 @@
 // app/api/chat/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenAI, ThinkingLevel } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { getInstruction, parseJsonResponse, extractMode } from "./instruction";
 import { Role, Message, UploadedFile } from "@/types/chat";
@@ -219,13 +219,16 @@ export async function POST(req: NextRequest) {
 
         console.log("[RAG]", `Context files: ${contextFiles.map(f => f.name).join(", ") || "none"} | History: ${history.length} msgs`);
 
-        const modelId = useWebSearch ? "gemini-2.5-flash" : "gemini-2.5-flash";
+        // Model selection:
+        // - Web search: gemini-2.5-flash (thinking tidak support saat search aktif)
+        // - Deep think ON: gemini-2.5-flash-preview-04-17 dengan thinkingConfig HIGH
+        // - Normal: gemini-2.5-flash-preview-04-17 tanpa thinkingConfig
+        const modelId = useWebSearch ? "gemini-2.5-flash" : "gemini-3-flash-preview";
 
         const config: any = { temperature: 0.5 };
-        if (!useWebSearch) {
-            config.thinkingConfig = {
-                thinkingLevel: useHighThinking ? ThinkingLevel.HIGH : ThinkingLevel.LOW
-            };
+        if (useHighThinking && !useWebSearch) {
+            // Hanya kirim thinkingConfig jika deep think aktif DAN bukan web search
+            config.thinkingConfig = { thinkingBudget: 8000 };
         }
         if (useWebSearch) config.tools = [{ googleSearch: {} }];
 
