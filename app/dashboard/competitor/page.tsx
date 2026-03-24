@@ -18,7 +18,7 @@ interface Competitor {
 }
 
 type SortDir = 'asc' | 'desc'
-type SortField = 'competitor' | 'link_instagram' | 'follower'
+type SortField = 'competitor' | 'link_instagram' | 'follower' | 'table_id'
 
 function formatFollower(n: number): string {
     if (!n && n !== 0) return '—'
@@ -344,13 +344,19 @@ export default function CompetitorPage() {
 
     const sorted = [...rows].sort((a, b) => {
         if (!sortField) return 0
-        const va = a[sortField]
-        const vb = b[sortField]
+        let va: any = a[sortField]
+        let vb: any = b[sortField]
+
+        if (sortField === 'table_id') {
+            va = tables.find(t => t.id === a.table_id)?.title || ''
+            vb = tables.find(t => t.id === b.table_id)?.title || ''
+        }
+
         if (typeof va === 'number' && typeof vb === 'number')
             return sortDir === 'asc' ? va - vb : vb - va
         return sortDir === 'asc'
-            ? String(va).localeCompare(String(vb))
-            : String(vb).localeCompare(String(va))
+            ? String(va).localeCompare(String(vb), undefined, { numeric: true, sensitivity: 'base' })
+            : String(vb).localeCompare(String(va), undefined, { numeric: true, sensitivity: 'base' })
     })
 
     // ─── Column resizing ───────────────────────────────────────────────────────
@@ -564,17 +570,7 @@ export default function CompetitorPage() {
                                                     />
                                                 </th>
                                                 {renderSortHeader('Link Instagram', 'link_instagram', 'link_instagram')}
-                                                {/* Bidang col header */}
-                                                <th
-                                                    className="border border-[#2e2e2e] py-2 px-3 text-xs font-semibold uppercase text-zinc-500 relative select-none"
-                                                    style={{ width: colWidths.bidang }}
-                                                >
-                                                    Bidang
-                                                    <span
-                                                        onMouseDown={e => startResize('bidang', e)}
-                                                        className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-dz-primary/50 transition-colors"
-                                                    />
-                                                </th>
+                                                {renderSortHeader('Bidang', 'table_id', 'bidang')}
                                                 {renderSortHeader('Follower', 'follower', 'follower')}
                                             </tr>
                                         </thead>
