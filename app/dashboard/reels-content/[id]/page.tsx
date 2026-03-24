@@ -62,7 +62,7 @@ function TextField({ label, value, onChange, placeholder, wide }: { label: strin
                 value={value}
                 onChange={e => onChange(e.target.value)}
                 placeholder={placeholder}
-                className="w-full rounded-lg bg-[#27272a] border border-[#3a3a3a] px-3 py-2 text-sm text-white placeholder-zinc-600 outline-none focus:border-dz-primary transition-colors"
+                className="w-full rounded-lg bg-[#1f1f1f] border border-[#3a3a3a] px-3 py-2 text-sm text-white placeholder-zinc-600 outline-none focus:border-dz-primary transition-colors"
             />
         </div>
     )
@@ -77,7 +77,7 @@ function TextareaField({ label, value, onChange, placeholder, wide, rows = 4 }: 
                 onChange={e => onChange(e.target.value)}
                 placeholder={placeholder}
                 rows={rows}
-                className="w-full rounded-lg bg-[#27272a] border border-[#3a3a3a] px-3 py-2 text-sm text-white placeholder-zinc-600 outline-none focus:border-dz-primary transition-colors resize-y"
+                className="w-full rounded-lg bg-[#1f1f1f] border border-[#3a3a3a] px-3 py-2 text-sm text-white placeholder-zinc-600 outline-none focus:border-dz-primary transition-colors resize-y"
             />
         </div>
     )
@@ -93,7 +93,7 @@ function DatetimeField({ label, value, onChange }: { label: string; value: strin
                 type="datetime-local"
                 value={value}
                 onChange={e => onChange(e.target.value)}
-                className="w-full rounded-lg bg-[#27272a] border border-[#3a3a3a] px-3 py-2 text-sm text-white outline-none focus:border-dz-primary transition-colors"
+                className="w-full rounded-lg bg-[#1f1f1f] border border-[#3a3a3a] px-3 py-2 text-sm text-white outline-none focus:border-dz-primary transition-colors"
             />
         </div>
     )

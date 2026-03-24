@@ -94,13 +94,13 @@ export function ContentTable({
         checkbox: 40,
         no: 50,
         topic: 250,
-        edit: 90,
+        edit: 160,
         status: 170,
         priority: 100,
         format: 150,
-        content_type: 190,
+        content_type: 240,
         funnel: 160,
-        section: 180,
+        section: 200,
         sprint: 140,
     })
 
@@ -445,7 +445,7 @@ export function ContentTable({
                                             <div className="flex items-center justify-center gap-1.5">
                                                 <button
                                                     onClick={() => onEditContent(row.id)}
-                                                    className="inline-flex items-center gap-1.5 rounded-sm bg-[#27272a] px-2.5 py-1 text-xs text-zinc-300 hover:bg-dz-primary hover:text-white transition-colors cursor-pointer"
+                                                    className="inline-flex items-center gap-1.5 rounded-sm bg-[#27272a] px-2.5 py-1 text-xs text-zinc-300 hover:bg-dz-primary hover:text-white transition-colors cursor-pointer font-semibold"
                                                 >
                                                     <Pencil size={11} /> EDIT
                                                 </button>
@@ -453,7 +453,7 @@ export function ContentTable({
                                                     onClick={() => handleSendToRag(row)}
                                                     disabled={ragSaving === row.id}
                                                     title="Kirim ke Knowledge Base (RAG)"
-                                                    className={`inline-flex items-center gap-1 rounded-sm px-2 py-1 text-xs transition-colors cursor-pointer disabled:cursor-not-allowed ${ragDone === row.id
+                                                    className={`inline-flex items-center gap-1 rounded-sm px-2 py-1 text-xs transition-colors cursor-pointer font-semibold  disabled:cursor-not-allowed ${ragDone === row.id
                                                             ? 'bg-dz-primary/20 text-dz-primary'
                                                             : 'bg-[#1e1e1e] text-zinc-500 hover:bg-dz-primary/20 hover:text-dz-primary border border-[#2e2e2e]'
                                                         }`}

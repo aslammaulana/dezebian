@@ -252,7 +252,7 @@ export default function AtmPage() {
                     </button>
                     <button
                         onClick={openCreate}
-                        className="flex items-center gap-1.5 rounded-lg bg-dz-primary px-3 py-1.5 text-xs text-white hover:bg-[#007042] transition-colors cursor-pointer"
+                        className="flex items-center gap-1.5 rounded-md bg-dz-primary px-3 py-1.5 text-xs text-white hover:bg-[#007042] transition-colors cursor-pointer"
                     >
                         <Plus size={13} /> Tambah ATM
                     </button>
