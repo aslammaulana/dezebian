@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Plus, Trash2, RefreshCw, LayoutTemplate } from 'lucide-react'
+import { Plus, Trash2, RefreshCw, LayoutTemplate, ChevronsUpDown } from 'lucide-react'
 import clsx from 'clsx'
 
 interface Competitor {
@@ -12,7 +12,9 @@ interface Competitor {
     created_at?: string
 }
 
-// Format number as short (e.g. 12500 → 12.5K)
+type SortDir = 'asc' | 'desc'
+type SortField = 'competitor' | 'link_instagram' | 'follower'
+
 function formatFollower(n: number): string {
     if (!n && n !== 0) return '—'
     if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
@@ -20,9 +22,8 @@ function formatFollower(n: number): string {
     return n.toString()
 }
 
-function formatNumber(n: number): string {
-    return n.toLocaleString('id-ID')
-}
+// ─── Column widths state ───────────────────────────────────────────────────────
+const DEFAULT_WIDTHS = { no: 52, competitor: 220, link_instagram: 260, follower: 130 }
 
 export default function CompetitorPage() {
     const [rows, setRows] = useState<Competitor[]>([])
@@ -30,10 +31,20 @@ export default function CompetitorPage() {
     const [isRefreshing, setIsRefreshing] = useState(false)
     const [selectedRows, setSelectedRows] = useState<string[]>([])
 
-    // Inline editing state
+    // Sort
+    const [sortField, setSortField] = useState<SortField | null>(null)
+    const [sortDir, setSortDir] = useState<SortDir>('asc')
+
+    // Column widths
+    const [colWidths, setColWidths] = useState(DEFAULT_WIDTHS)
+
+    // Inline editing
     const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null)
     const [editValue, setEditValue] = useState<string>('')
     const inputRef = useRef<HTMLInputElement>(null)
+
+    // Resizer drag state
+    const resizingRef = useRef<{ col: keyof typeof DEFAULT_WIDTHS; startX: number; startW: number } | null>(null)
 
     const fetchData = useCallback(async () => {
         setIsRefreshing(true)
@@ -41,35 +52,65 @@ export default function CompetitorPage() {
             const res = await fetch('/api/competitors')
             const data = await res.json()
             setRows(Array.isArray(data) ? data : [])
-        } catch (err) {
-            console.error(err)
-        } finally {
-            setLoading(false)
-            setIsRefreshing(false)
-        }
+        } catch (err) { console.error(err) }
+        finally { setLoading(false); setIsRefreshing(false) }
     }, [])
 
     useEffect(() => { fetchData() }, [fetchData])
 
-    // Focus input when editing starts
     useEffect(() => {
         if (editingCell && inputRef.current) inputRef.current.focus()
     }, [editingCell])
 
-    const startEdit = (id: string, field: string, currentValue: string | number) => {
+    // ─── Sorting ───────────────────────────────────────────────────────────────
+    const handleSort = (field: SortField) => {
+        if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+        else { setSortField(field); setSortDir('asc') }
+    }
+
+    const sorted = [...rows].sort((a, b) => {
+        if (!sortField) return 0
+        const va = a[sortField]
+        const vb = b[sortField]
+        if (typeof va === 'number' && typeof vb === 'number')
+            return sortDir === 'asc' ? va - vb : vb - va
+        return sortDir === 'asc'
+            ? String(va).localeCompare(String(vb))
+            : String(vb).localeCompare(String(va))
+    })
+
+    // ─── Column resizing ───────────────────────────────────────────────────────
+    const startResize = (col: keyof typeof DEFAULT_WIDTHS, e: React.MouseEvent) => {
+        e.preventDefault()
+        resizingRef.current = { col, startX: e.clientX, startW: colWidths[col] }
+
+        const onMove = (ev: MouseEvent) => {
+            if (!resizingRef.current) return
+            const delta = ev.clientX - resizingRef.current.startX
+            const newW = Math.max(60, resizingRef.current.startW + delta)
+            setColWidths(prev => ({ ...prev, [resizingRef.current!.col]: newW }))
+        }
+        const onUp = () => {
+            resizingRef.current = null
+            document.removeEventListener('mousemove', onMove)
+            document.removeEventListener('mouseup', onUp)
+        }
+        document.addEventListener('mousemove', onMove)
+        document.addEventListener('mouseup', onUp)
+    }
+
+    // ─── Inline edit ──────────────────────────────────────────────────────────
+    const startEdit = (id: string, field: string, val: string | number) => {
         setEditingCell({ id, field })
-        setEditValue(String(currentValue ?? ''))
+        setEditValue(String(val ?? ''))
     }
 
     const commitEdit = async () => {
         if (!editingCell) return
         const { id, field } = editingCell
         const value = field === 'follower' ? parseInt(editValue.replace(/\D/g, ''), 10) || 0 : editValue
-
-        // Optimistic update
         setRows(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r))
         setEditingCell(null)
-
         try {
             const res = await fetch('/api/competitors', {
                 method: 'PATCH',
@@ -77,14 +118,12 @@ export default function CompetitorPage() {
                 body: JSON.stringify({ id, [field]: value }),
             })
             if (!res.ok) fetchData()
-        } catch (err) {
-            console.error(err)
-            fetchData()
-        }
+        } catch { fetchData() }
     }
 
     const cancelEdit = () => setEditingCell(null)
 
+    // ─── CRUD ─────────────────────────────────────────────────────────────────
     const handleAddRow = async () => {
         try {
             const res = await fetch('/api/competitors', {
@@ -99,7 +138,7 @@ export default function CompetitorPage() {
     }
 
     const handleDeleteSelected = async () => {
-        if (selectedRows.length === 0) return
+        if (!selectedRows.length) return
         setRows(prev => prev.filter(r => !selectedRows.includes(r.id)))
         setSelectedRows([])
         try {
@@ -108,10 +147,7 @@ export default function CompetitorPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ids: selectedRows }),
             })
-        } catch (err) {
-            console.error(err)
-            fetchData()
-        }
+        } catch { fetchData() }
     }
 
     const toggleSelect = (id: string) =>
@@ -120,27 +156,46 @@ export default function CompetitorPage() {
     const toggleSelectAll = () =>
         setSelectedRows(prev => prev.length === rows.length ? [] : rows.map(r => r.id))
 
-    // --- render inline editable cell ---
-    const renderCell = (row: Competitor, field: 'competitor' | 'link_instagram' | 'follower') => {
+    // ─── Render sort header ───────────────────────────────────────────────────
+    const renderSortHeader = (label: string, field: SortField, col: keyof typeof DEFAULT_WIDTHS) => (
+        <th
+            key={field}
+            className="border border-[#2e2e2e] py-2 px-3 text-xs font-semibold uppercase text-zinc-500 relative select-none"
+            style={{ width: colWidths[col] }}
+        >
+            <button
+                onClick={() => handleSort(field)}
+                className={clsx(
+                    'flex items-center gap-1.5 cursor-pointer transition-colors uppercase',
+                    sortField === field ? 'text-dz-primary' : 'text-zinc-500 hover:text-zinc-300'
+                )}
+            >
+                {label}
+                <ChevronsUpDown size={12} className={clsx('shrink-0 transition-transform', sortField === field && sortDir === 'desc' ? 'rotate-180' : '')} />
+            </button>
+            {/* Resizer */}
+            <span
+                onMouseDown={e => startResize(col, e)}
+                className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-dz-primary/50 transition-colors"
+            />
+        </th>
+    )
+
+    // ─── Render editable cell ─────────────────────────────────────────────────
+    const renderCell = (row: Competitor, field: 'competitor' | 'link_instagram') => {
         const isEditing = editingCell?.id === row.id && editingCell?.field === field
-        const raw = row[field]
-        const display = field === 'follower'
-            ? formatNumber(raw as number)
-            : (raw as string) || <span className="text-zinc-600 italic">—</span>
+        const val = row[field]
 
         if (isEditing) {
             return (
                 <input
                     ref={inputRef}
-                    type={field === 'follower' ? 'number' : 'text'}
+                    type="text"
                     value={editValue}
                     onChange={e => setEditValue(e.target.value)}
                     onBlur={commitEdit}
-                    onKeyDown={e => {
-                        if (e.key === 'Enter') commitEdit()
-                        if (e.key === 'Escape') cancelEdit()
-                    }}
-                    className="w-full rounded bg-[#27272a] border border-dz-primary px-2 py-1 text-sm text-white outline-none"
+                    onKeyDown={e => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') cancelEdit() }}
+                    className="w-full rounded bg-[#27272a] border border-dz-primary px-2 py-0.5 text-sm text-white outline-none"
                 />
             )
         }
@@ -149,20 +204,22 @@ export default function CompetitorPage() {
             <span
                 role="button"
                 tabIndex={0}
-                onDoubleClick={() => startEdit(row.id, field, row[field] ?? '')}
-                onKeyDown={e => { if (e.key === 'Enter') startEdit(row.id, field, row[field] ?? '') }}
+                onDoubleClick={() => startEdit(row.id, field, val)}
+                onKeyDown={e => { if (e.key === 'Enter') startEdit(row.id, field, val) }}
                 className={clsx(
-                    'block w-full cursor-pointer rounded px-1 py-0.5 text-sm transition-colors hover:bg-[#27272a]',
-                    field === 'link_instagram' && raw ? 'text-sky-400 hover:underline' : 'text-zinc-200'
+                    'block w-full truncate cursor-pointer rounded px-1 py-0.5 text-sm transition-colors hover:bg-[#27272a]',
+                    field === 'link_instagram' && val ? 'text-sky-400' : 'text-zinc-200'
                 )}
                 title="Double-click to edit"
             >
-                {display}
+                {val || <span className="text-zinc-600 italic">—</span>}
             </span>
         )
     }
 
-    // --- Sidebar (no sprint, just static label) ---
+    const totalWidth = colWidths.no + 40 + colWidths.competitor + colWidths.link_instagram + colWidths.follower
+
+    // ─── JSX ──────────────────────────────────────────────────────────────────
     return (
         <div className="flex h-full w-full flex-col bg-dz-background overflow-hidden">
             {/* Top Bar */}
@@ -203,10 +260,21 @@ export default function CompetitorPage() {
                 {loading ? (
                     <div className="flex h-full items-center justify-center text-zinc-500 text-sm">Loading...</div>
                 ) : (
-                    <table className="w-full border-collapse text-left text-sm">
+                    <table
+                        className="border-collapse text-left"
+                        style={{ tableLayout: 'fixed', width: totalWidth, minWidth: '100%' }}
+                    >
+                        <colgroup>
+                            <col style={{ width: 40 }} />
+                            <col style={{ width: colWidths.no }} />
+                            <col style={{ width: colWidths.competitor }} />
+                            <col style={{ width: colWidths.link_instagram }} />
+                            <col style={{ width: colWidths.follower }} />
+                        </colgroup>
                         <thead className="bg-[#1A1A1A] sticky top-0 z-10">
                             <tr>
-                                <th className="border border-[#2e2e2e] py-2 px-3 text-center text-xs font-semibold uppercase text-zinc-500 w-10">
+                                {/* Checkbox */}
+                                <th className="border border-[#2e2e2e] py-2 px-3 text-center w-10">
                                     <input
                                         type="checkbox"
                                         className="h-4 w-4 rounded border-zinc-700 bg-zinc-900"
@@ -214,21 +282,31 @@ export default function CompetitorPage() {
                                         onChange={toggleSelectAll}
                                     />
                                 </th>
-                                <th className="border border-[#2e2e2e] py-2 px-3 text-xs font-semibold uppercase text-zinc-500 w-12">NO.</th>
-                                <th className="border border-[#2e2e2e] py-2 px-3 text-xs font-semibold uppercase text-zinc-500">COMPETITOR</th>
-                                <th className="border border-[#2e2e2e] py-2 px-3 text-xs font-semibold uppercase text-zinc-500">LINK INSTAGRAM</th>
-                                <th className="border border-[#2e2e2e] py-2 px-3 text-xs font-semibold uppercase text-zinc-500 text-right">FOLLOWER</th>
+                                {/* No. — static, resizable */}
+                                <th
+                                    className="border border-[#2e2e2e] py-2 px-3 text-xs font-semibold uppercase text-zinc-500 relative select-none"
+                                    style={{ width: colWidths.no }}
+                                >
+                                    NO.
+                                    <span
+                                        onMouseDown={e => startResize('no', e)}
+                                        className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-dz-primary/50 transition-colors"
+                                    />
+                                </th>
+                                {renderSortHeader('Competitor', 'competitor', 'competitor')}
+                                {renderSortHeader('Link Instagram', 'link_instagram', 'link_instagram')}
+                                {renderSortHeader('Follower', 'follower', 'follower')}
                             </tr>
                         </thead>
                         <tbody>
-                            {rows.length === 0 ? (
+                            {sorted.length === 0 ? (
                                 <tr>
                                     <td colSpan={5} className="py-12 text-center text-zinc-600 text-sm italic">
                                         Belum ada data. Klik &quot;Insert Row&quot; untuk menambah.
                                     </td>
                                 </tr>
                             ) : (
-                                rows.map((row, idx) => (
+                                sorted.map((row, idx) => (
                                     <tr
                                         key={row.id}
                                         className={clsx(
@@ -245,41 +323,35 @@ export default function CompetitorPage() {
                                             />
                                         </td>
                                         <td className="border border-[#2e2e2e] py-2 px-3 text-zinc-500 text-xs">{idx + 1}</td>
-                                        <td className="border border-[#2e2e2e] py-2 px-3 font-medium">
+                                        <td className="border border-[#2e2e2e] py-2 px-3">
                                             {renderCell(row, 'competitor')}
                                         </td>
                                         <td className="border border-[#2e2e2e] py-2 px-3">
                                             {renderCell(row, 'link_instagram')}
                                         </td>
                                         <td className="border border-[#2e2e2e] py-2 px-3 text-right">
-                                            <span
-                                                role="button"
-                                                tabIndex={0}
-                                                onDoubleClick={() => startEdit(row.id, 'follower', row.follower)}
-                                                onKeyDown={e => { if (e.key === 'Enter') startEdit(row.id, 'follower', row.follower) }}
-                                                className={clsx(
-                                                    'cursor-pointer rounded px-1 py-0.5 text-sm font-mono text-zinc-300 transition-colors hover:bg-[#27272a]',
-                                                    editingCell?.id === row.id && editingCell.field === 'follower' ? '' : ''
-                                                )}
-                                                title="Double-click to edit"
-                                            >
-                                                {editingCell?.id === row.id && editingCell.field === 'follower' ? (
-                                                    <input
-                                                        ref={inputRef}
-                                                        type="number"
-                                                        value={editValue}
-                                                        onChange={e => setEditValue(e.target.value)}
-                                                        onBlur={commitEdit}
-                                                        onKeyDown={e => {
-                                                            if (e.key === 'Enter') commitEdit()
-                                                            if (e.key === 'Escape') cancelEdit()
-                                                        }}
-                                                        className="w-28 rounded bg-[#27272a] border border-dz-primary px-2 py-1 text-sm text-white outline-none text-right"
-                                                    />
-                                                ) : (
-                                                    <span className="text-zinc-300 font-mono">{formatFollower(row.follower)}</span>
-                                                )}
-                                            </span>
+                                            {editingCell?.id === row.id && editingCell.field === 'follower' ? (
+                                                <input
+                                                    ref={inputRef}
+                                                    type="number"
+                                                    value={editValue}
+                                                    onChange={e => setEditValue(e.target.value)}
+                                                    onBlur={commitEdit}
+                                                    onKeyDown={e => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') cancelEdit() }}
+                                                    className="w-full rounded bg-[#27272a] border border-dz-primary px-2 py-0.5 text-sm text-white outline-none text-right"
+                                                />
+                                            ) : (
+                                                <span
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onDoubleClick={() => startEdit(row.id, 'follower', row.follower)}
+                                                    onKeyDown={e => { if (e.key === 'Enter') startEdit(row.id, 'follower', row.follower) }}
+                                                    className="block w-full text-right cursor-pointer rounded px-1 py-0.5 text-sm font-mono text-zinc-300 transition-colors hover:bg-[#27272a]"
+                                                    title="Double-click to edit"
+                                                >
+                                                    {formatFollower(row.follower)}
+                                                </span>
+                                            )}
                                         </td>
                                     </tr>
                                 ))

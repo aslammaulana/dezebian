@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Trash2, RefreshCw, ExternalLink, Telescope, X } from 'lucide-react'
+import { Plus, Trash2, RefreshCw, Telescope, X, ExternalLink } from 'lucide-react'
 import clsx from 'clsx'
 
 interface AtmEntry {
@@ -15,16 +15,6 @@ interface AtmEntry {
     created_at?: string
 }
 
-const EMPTY_ENTRY: Omit<AtmEntry, 'id' | 'created_at'> = {
-    link_instagram: '',
-    topik: '',
-    problem: '',
-    solusi: '',
-    visual: '',
-    hook_script: '',
-}
-
-// ─── Field label map ─────────────────────────────────────────────────────────
 const FIELDS: { key: keyof Omit<AtmEntry, 'id' | 'created_at'>; label: string; multiline?: boolean }[] = [
     { key: 'link_instagram', label: 'Link Instagram' },
     { key: 'topik', label: 'Topik' },
@@ -34,55 +24,84 @@ const FIELDS: { key: keyof Omit<AtmEntry, 'id' | 'created_at'>; label: string; m
     { key: 'hook_script', label: 'Hook Script', multiline: true },
 ]
 
-// ─── Modal for add/edit ───────────────────────────────────────────────────────
-interface ModalProps {
+// ─── Sidebar (slide from right) ───────────────────────────────────────────────
+interface SidebarProps {
+    isOpen: boolean
     entry: Partial<AtmEntry> | null
+    isNew: boolean
     onClose: () => void
     onSave: (data: Omit<AtmEntry, 'id' | 'created_at'>) => void
-    isNew?: boolean
 }
 
-function AtmModal({ entry, onClose, onSave, isNew }: ModalProps) {
+function AtmSidebar({ isOpen, entry, isNew, onClose, onSave }: SidebarProps) {
     const [form, setForm] = useState<Omit<AtmEntry, 'id' | 'created_at'>>({
-        link_instagram: entry?.link_instagram ?? '',
-        topik: entry?.topik ?? '',
-        problem: entry?.problem ?? '',
-        solusi: entry?.solusi ?? '',
-        visual: entry?.visual ?? '',
-        hook_script: entry?.hook_script ?? '',
+        link_instagram: '',
+        topik: '',
+        problem: '',
+        solusi: '',
+        visual: '',
+        hook_script: '',
     })
+
+    // Reset form when entry changes
+    useEffect(() => {
+        setForm({
+            link_instagram: entry?.link_instagram ?? '',
+            topik: entry?.topik ?? '',
+            problem: entry?.problem ?? '',
+            solusi: entry?.solusi ?? '',
+            visual: entry?.visual ?? '',
+            hook_script: entry?.hook_script ?? '',
+        })
+    }, [entry])
 
     const handleChange = (key: string, value: string) =>
         setForm(prev => ({ ...prev, [key]: value }))
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-            <div
-                className="relative bg-[#1a1a1a] border border-[#3a3a3a] rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto scrollbar-thin shadow-2xl p-6"
-                onClick={e => e.stopPropagation()}
+        <>
+            {/* Backdrop */}
+            {isOpen && (
+                <div
+                    className="fixed inset-0 z-40 bg-black/40"
+                    onClick={onClose}
+                />
+            )}
+
+            {/* Sidebar panel */}
+            <aside
+                className={clsx(
+                    'fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-[#27272a] bg-[#141414] shadow-2xl transition-transform duration-300 ease-in-out',
+                    isOpen ? 'translate-x-0' : 'translate-x-full'
+                )}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between mb-5">
-                    <h2 className="text-base font-semibold text-white flex items-center gap-2">
-                        <Telescope size={16} className="text-dz-primary" />
+                <div className="flex h-[50px] shrink-0 items-center justify-between border-b border-[#27272a] px-4">
+                    <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
+                        <Telescope size={15} className="text-dz-primary" />
                         {isNew ? 'Tambah ATM Baru' : 'Edit ATM'}
                     </h2>
-                    <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors cursor-pointer rounded-lg p-1 hover:bg-[#27272a]">
+                    <button
+                        onClick={onClose}
+                        className="rounded-lg p-1.5 text-zinc-500 hover:bg-[#27272a] hover:text-white transition-colors cursor-pointer"
+                    >
                         <X size={16} />
                     </button>
                 </div>
 
                 {/* Fields */}
-                <div className="flex flex-col gap-4">
+                <div className="flex-1 overflow-y-auto scrollbar-thin p-4 flex flex-col gap-4">
                     {FIELDS.map(({ key, label, multiline }) => (
                         <div key={key}>
-                            <label className="block text-xs text-zinc-400 mb-1.5 uppercase tracking-wide">{label}</label>
+                            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">
+                                {label}
+                            </label>
                             {multiline ? (
                                 <textarea
                                     value={form[key]}
                                     onChange={e => handleChange(key, e.target.value)}
-                                    rows={3}
-                                    className="w-full rounded-lg border border-[#3a3a3a] bg-[#1f1f1f] px-3 py-2.5 text-sm text-white outline-none focus:border-dz-primary resize-none scrollbar-thin"
+                                    rows={4}
+                                    className="w-full rounded-lg border border-[#3a3a3a] bg-[#1f1f1f] px-3 py-2.5 text-sm text-white outline-none focus:border-dz-primary resize-none scrollbar-thin transition-colors"
                                     placeholder={`Tulis ${label.toLowerCase()}...`}
                                 />
                             ) : (
@@ -90,7 +109,7 @@ function AtmModal({ entry, onClose, onSave, isNew }: ModalProps) {
                                     type="text"
                                     value={form[key]}
                                     onChange={e => handleChange(key, e.target.value)}
-                                    className="w-full rounded-lg border border-[#3a3a3a] bg-[#1f1f1f] px-3 py-2.5 text-sm text-white outline-none focus:border-dz-primary"
+                                    className="w-full rounded-lg border border-[#3a3a3a] bg-[#1f1f1f] px-3 py-2.5 text-sm text-white outline-none focus:border-dz-primary transition-colors"
                                     placeholder={`Masukkan ${label.toLowerCase()}...`}
                                 />
                             )}
@@ -98,8 +117,8 @@ function AtmModal({ entry, onClose, onSave, isNew }: ModalProps) {
                     ))}
                 </div>
 
-                {/* Actions */}
-                <div className="mt-6 flex justify-end gap-3">
+                {/* Footer actions */}
+                <div className="shrink-0 border-t border-[#27272a] p-4 flex justify-end gap-3">
                     <button
                         onClick={onClose}
                         className="rounded-lg border border-[#3a3a3a] px-4 py-2 text-sm text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors cursor-pointer"
@@ -113,15 +132,13 @@ function AtmModal({ entry, onClose, onSave, isNew }: ModalProps) {
                         Simpan
                     </button>
                 </div>
-            </div>
-        </div>
+            </aside>
+        </>
     )
 }
 
-// ─── Card component ───────────────────────────────────────────────────────────
-interface CardField { label: string; value: string; multiline?: boolean; isLink?: boolean }
-
-function FieldRow({ label, value, multiline, isLink }: CardField) {
+// ─── Card field row ────────────────────────────────────────────────────────────
+function FieldRow({ label, value, isLink }: { label: string; value: string; isLink?: boolean }) {
     if (!value) return null
     return (
         <div className="flex flex-col gap-0.5">
@@ -131,12 +148,13 @@ function FieldRow({ label, value, multiline, isLink }: CardField) {
                     href={value.startsWith('http') ? value : `https://${value}`}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={e => e.stopPropagation()}
                     className="flex items-center gap-1 text-xs text-sky-400 hover:underline break-all"
                 >
                     {value} <ExternalLink size={10} className="shrink-0" />
                 </a>
             ) : (
-                <p className={clsx('text-sm text-zinc-300 leading-relaxed', !multiline && 'truncate')}>{value}</p>
+                <p className="text-sm text-zinc-300 leading-relaxed">{value}</p>
             )}
         </div>
     )
@@ -148,7 +166,10 @@ export default function AtmPage() {
     const [loading, setLoading] = useState(true)
     const [isRefreshing, setIsRefreshing] = useState(false)
     const [selectedIds, setSelectedIds] = useState<string[]>([])
-    const [modal, setModal] = useState<{ entry: Partial<AtmEntry> | null; isNew: boolean } | null>(null)
+
+    const [sidebarOpen, setSidebarOpen] = useState(false)
+    const [activeEntry, setActiveEntry] = useState<Partial<AtmEntry> | null>(null)
+    const [isNew, setIsNew] = useState(false)
 
     const fetchData = useCallback(async () => {
         setIsRefreshing(true)
@@ -162,10 +183,19 @@ export default function AtmPage() {
 
     useEffect(() => { fetchData() }, [fetchData])
 
-    const handleSave = async (formData: Omit<AtmEntry, 'id' | 'created_at'>) => {
-        const isNew = modal?.isNew
-        const id = modal?.entry?.id
+    const openCreate = () => {
+        setActiveEntry({ link_instagram: '', topik: '', problem: '', solusi: '', visual: '', hook_script: '' })
+        setIsNew(true)
+        setSidebarOpen(true)
+    }
 
+    const openEdit = (entry: AtmEntry) => {
+        setActiveEntry(entry)
+        setIsNew(false)
+        setSidebarOpen(true)
+    }
+
+    const handleSave = async (formData: Omit<AtmEntry, 'id' | 'created_at'>) => {
         if (isNew) {
             const res = await fetch('/api/atm', {
                 method: 'POST',
@@ -176,8 +206,8 @@ export default function AtmPage() {
                 const newEntry = await res.json()
                 setEntries(prev => [...prev, newEntry])
             }
-        } else if (id) {
-            // Optimistic
+        } else if (activeEntry?.id) {
+            const id = activeEntry.id
             setEntries(prev => prev.map(e => e.id === id ? { ...e, ...formData } : e))
             await fetch('/api/atm', {
                 method: 'PATCH',
@@ -185,11 +215,11 @@ export default function AtmPage() {
                 body: JSON.stringify({ id, ...formData }),
             })
         }
-        setModal(null)
+        setSidebarOpen(false)
     }
 
     const handleDelete = async () => {
-        if (selectedIds.length === 0) return
+        if (!selectedIds.length) return
         setEntries(prev => prev.filter(e => !selectedIds.includes(e.id)))
         setSelectedIds([])
         await fetch('/api/atm', {
@@ -229,7 +259,7 @@ export default function AtmPage() {
                         <RefreshCw size={14} />
                     </button>
                     <button
-                        onClick={() => setModal({ entry: EMPTY_ENTRY, isNew: true })}
+                        onClick={openCreate}
                         className="flex items-center gap-1.5 rounded-lg bg-dz-primary px-3 py-1.5 text-xs text-white hover:bg-[#007042] transition-colors cursor-pointer"
                     >
                         <Plus size={13} /> Tambah ATM
@@ -259,9 +289,9 @@ export default function AtmPage() {
                                             ? 'border-dz-primary bg-dz-primary/10'
                                             : 'border-[#2e2e2e] bg-[#1a1a1a] hover:border-[#3a3a3a] hover:bg-[#1e1e1e]'
                                     )}
-                                    onClick={() => setModal({ entry, isNew: false })}
+                                    onClick={() => openEdit(entry)}
                                 >
-                                    {/* Checkbox top-right */}
+                                    {/* Checkbox */}
                                     <div
                                         className="absolute top-3 right-3"
                                         onClick={e => { e.stopPropagation(); toggleSelect(entry.id) }}
@@ -270,13 +300,13 @@ export default function AtmPage() {
                                             type="checkbox"
                                             checked={isSelected}
                                             onChange={() => { }}
-                                            className="h-3.5 w-3.5 rounded border-zinc-600 bg-zinc-900 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
-                                            style={{ opacity: isSelected ? 1 : undefined }}
+                                            className="h-3.5 w-3.5 rounded border-zinc-600 bg-zinc-900 cursor-pointer"
+                                            style={{ opacity: isSelected ? 1 : 0 }}
                                         />
                                     </div>
 
-                                    {/* Card number badge */}
-                                    <div className="flex items-center gap-2">
+                                    {/* Number + Link */}
+                                    <div className="flex items-center gap-2 pr-5">
                                         <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#27272a] text-[10px] font-bold text-zinc-400">
                                             {idx + 1}
                                         </span>
@@ -286,7 +316,7 @@ export default function AtmPage() {
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 onClick={e => e.stopPropagation()}
-                                                className="flex items-center gap-1 text-xs text-sky-400 hover:underline truncate max-w-[200px]"
+                                                className="flex items-center gap-1 text-xs text-sky-400 hover:underline truncate"
                                             >
                                                 <ExternalLink size={10} className="shrink-0" />
                                                 {entry.link_instagram}
@@ -294,20 +324,17 @@ export default function AtmPage() {
                                         )}
                                     </div>
 
-                                    {/* Divider */}
                                     <div className="border-t border-[#2e2e2e]" />
 
-                                    {/* Content fields */}
                                     <div className="flex flex-col gap-3">
                                         <FieldRow label="Topik" value={entry.topik} />
-                                        <FieldRow label="Problem" value={entry.problem} multiline />
-                                        <FieldRow label="Solusi" value={entry.solusi} multiline />
-                                        <FieldRow label="Visual" value={entry.visual} multiline />
-                                        <FieldRow label="Hook Script" value={entry.hook_script} multiline />
+                                        <FieldRow label="Problem" value={entry.problem} />
+                                        <FieldRow label="Solusi" value={entry.solusi} />
+                                        <FieldRow label="Visual" value={entry.visual} />
+                                        <FieldRow label="Hook Script" value={entry.hook_script} />
                                     </div>
 
-                                    {/* Hover hint */}
-                                    <p className="mt-auto pt-2 text-[10px] text-zinc-700 group-hover:text-zinc-600 transition-colors">
+                                    <p className="mt-auto pt-1 text-[10px] text-zinc-700 group-hover:text-zinc-600 transition-colors">
                                         Klik untuk edit
                                     </p>
                                 </div>
@@ -322,15 +349,14 @@ export default function AtmPage() {
                 {entries.length} entri
             </div>
 
-            {/* Modal */}
-            {modal && (
-                <AtmModal
-                    entry={modal.entry}
-                    isNew={modal.isNew}
-                    onClose={() => setModal(null)}
-                    onSave={handleSave}
-                />
-            )}
+            {/* Sidebar */}
+            <AtmSidebar
+                isOpen={sidebarOpen}
+                entry={activeEntry}
+                isNew={isNew}
+                onClose={() => setSidebarOpen(false)}
+                onSave={handleSave}
+            />
         </div>
     )
 }
