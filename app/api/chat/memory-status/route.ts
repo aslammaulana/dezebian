@@ -108,6 +108,7 @@ export async function GET(req: NextRequest) {
             hasPending: milestones.some(m => m.status === "pending"),
         });
     } catch (err: any) {
+        console.error("[MEMORY-STATUS ERROR]", err.message);
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }
