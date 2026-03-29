@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Plus, Trash2, RefreshCw, LayoutTemplate, ChevronsUpDown, X, Save, Pencil, ExternalLink, Loader2, Eye, FileText, Search, UserSearch } from 'lucide-react'
+import { Plus, Trash2, RefreshCw, PanelLeftOpen, PanelLeftClose, ChevronsUpDown, X, Save, Pencil, ExternalLink, Loader2, Eye, FileText, Search, UserSearch } from 'lucide-react'
 import clsx from 'clsx'
 
 import { ContentTable } from '@/lib/types'
@@ -414,6 +414,10 @@ export default function ContentTypePage() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
     const [isTableDrawerOpen, setIsTableDrawerOpen] = useState(false)
 
+    // Search
+    const [searchOpen, setSearchOpen] = useState(false)
+    const [searchQuery, setSearchQuery] = useState('')
+
     // Form modal state
     const [sidebarOpen, setFormSidebarOpen] = useState(false)
     const [sidebarMode, setSidebarMode] = useState<'create' | 'edit'>('create')
@@ -542,7 +546,12 @@ export default function ContentTypePage() {
         else { setSortField(field); setSortDir('asc') }
     }
 
-    const sorted = [...rows].sort((a, b) => {
+    // Filter by search
+    const filteredRows = searchQuery.trim()
+        ? rows.filter(r => r.topik.toLowerCase().includes(searchQuery.toLowerCase()))
+        : rows
+
+    const sorted = [...filteredRows].sort((a, b) => {
         if (!sortField) return 0
         let va: any = a[sortField]
         let vb: any = b[sortField]
@@ -666,46 +675,88 @@ export default function ContentTypePage() {
 
                 <main className="flex-1 h-full overflow-hidden flex flex-col bg-dz-background">
                     {/* Top Bar */}
-                    <div className="flex h-[50px] shrink-0 items-center justify-between border-b border-[#27272a] bg-[#1A1A1A] px-4 gap-3">
-                        <div className="flex items-center gap-3">
-                            {!isSidebarOpen && (
-                                <button
-                                    onClick={() => setIsSidebarOpen(true)}
-                                    className="p-1 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors"
-                                >
-                                    <LayoutTemplate size={16} />
-                                </button>
-                            )}
-                            <div className="flex items-center gap-2 text-sm text-white font-medium">
-                                Content Type: <span className="text-zinc-400 font-normal">{activeTable?.title || 'Semua'}</span>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            {selectedRows.length > 0 && (
+                    <div className="flex items-center justify-between border-b border-[#27272a] min-h-[50px] bg-[#1A1A1A]">
+                        {selectedRows.length > 0 ? (
+                            <div className="flex items-center gap-4 px-2 w-full">
                                 <button
                                     onClick={handleDeleteSelected}
-                                    className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors cursor-pointer"
+                                    className="flex items-center gap-2 rounded-md bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-500/20 transition-colors cursor-pointer"
                                 >
-                                    <Trash2 size={13} /> Hapus {selectedRows.length}
+                                    <Trash2 size={14} /> Hapus {selectedRows.length} terpilih
                                 </button>
-                            )}
-                            <button
-                                onClick={fetchData}
-                                className={clsx(
-                                    'flex items-center justify-center p-2 text-zinc-400 hover:text-white hover:bg-[#27272a] rounded-lg transition-colors cursor-pointer',
-                                    isRefreshing && 'animate-spin'
-                                )}
-                            >
-                                <RefreshCw size={14} />
-                            </button>
-                            <button
-                                onClick={openCreate}
-                                disabled={!activeTableId}
-                                className="flex items-center gap-1.5 rounded-md bg-dz-primary px-3 py-1.5 text-xs text-white hover:bg-[#007042] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <Plus size={13} /> Tambah
-                            </button>
-                        </div>
+                                <span className="text-xs text-zinc-500">{selectedRows.length} dipilih</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-0 w-full overflow-hidden">
+                                {/* Sidebar toggle */}
+                                <button
+                                    onClick={() => setIsSidebarOpen(p => !p)}
+                                    className="flex items-center justify-center p-4 text-zinc-400 hover:text-white hover:bg-[#222] transition-colors border-r border-[#27272a] cursor-pointer shrink-0"
+                                >
+                                    {isSidebarOpen ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
+                                </button>
+
+                                {/* Nama tabel aktif */}
+                                <div className="flex items-center gap-2 border-t-2 border-white px-4 py-3 bg-[#1A1A1A] shrink-0">
+                                    <span className="text-sm font-medium text-white">{activeTable?.title || 'Semua'}</span>
+                                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-zinc-800 text-[10px] text-zinc-400">{sorted.length}</span>
+                                </div>
+
+                                {/* Search */}
+                                <div className="flex items-center gap-1.5 px-2 ml-2">
+                                    <button
+                                        onClick={() => { if (searchOpen) setSearchQuery(''); setSearchOpen(p => !p) }}
+                                        className={clsx(
+                                            'flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition-colors cursor-pointer',
+                                            searchOpen
+                                                ? 'border-dz-primary bg-dz-primary/10 text-dz-primary'
+                                                : 'border-[#3a3a3a] text-zinc-400 hover:border-zinc-500 hover:text-white'
+                                        )}
+                                    >
+                                        <Search size={11} />
+                                        {!searchOpen && 'Search'}
+                                    </button>
+                                    <div className={clsx(
+                                        'flex items-center gap-1 overflow-hidden transition-all duration-200',
+                                        searchOpen ? 'w-44 opacity-100' : 'w-0 opacity-0'
+                                    )}>
+                                        <input
+                                            autoFocus={searchOpen}
+                                            type="text"
+                                            value={searchQuery}
+                                            onChange={e => setSearchQuery(e.target.value)}
+                                            placeholder="Cari topik..."
+                                            className="w-full h-7 rounded-lg bg-[#27272a] px-3 text-xs text-white placeholder-zinc-600 outline-none focus:ring-1 focus:ring-dz-primary"
+                                        />
+                                        {searchQuery && (
+                                            <button onClick={() => setSearchQuery('')} className="shrink-0 text-zinc-500 hover:text-white cursor-pointer">
+                                                <X size={12} />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Actions: Refresh + Tambah */}
+                                <div className="ml-auto flex items-center gap-1 pr-3 shrink-0">
+                                    <button
+                                        onClick={fetchData}
+                                        className={clsx(
+                                            'flex items-center justify-center p-2 text-zinc-400 hover:text-white hover:bg-[#27272a] rounded-lg transition-colors cursor-pointer',
+                                            isRefreshing && 'animate-spin'
+                                        )}
+                                    >
+                                        <RefreshCw size={14} />
+                                    </button>
+                                    <button
+                                        onClick={openCreate}
+                                        disabled={!activeTableId}
+                                        className="flex items-center gap-1.5 rounded-lg bg-dz-primary px-3 py-1.5 text-xs text-white hover:bg-[#007042] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <Plus size={13} /> Tambah
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {!activeTableId ? (
