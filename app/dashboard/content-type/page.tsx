@@ -164,24 +164,26 @@ function SidebarForm({ open, mode, initialData, tables, competitors, defaultTabl
     useEffect(() => {
         if (open) {
             if (mode === 'edit' && initialData) {
+                const resolvedJenis = initialData.jenis || initialData.table_id || ''
                 setForm({
                     topik: initialData.topik || '',
                     link_instagram: initialData.link_instagram || '',
                     views: initialData.views != null ? String(initialData.views) : '',
-                    table_id: initialData.table_id || defaultTableId,
-                    jenis: initialData.jenis || '',
+                    table_id: resolvedJenis,
+                    jenis: resolvedJenis,
                     deskripsi: initialData.deskripsi || '',
                     competitor_id: initialData.competitor_id || '',
                     content_type: initialData.content_type || '',
                 })
             } else {
-                setForm({ topik: '', link_instagram: '', views: '', table_id: defaultTableId === 'all' ? '' : defaultTableId, jenis: '', deskripsi: '', competitor_id: '', content_type: '' })
+                const defaultJenis = defaultTableId === 'all' ? '' : defaultTableId
+                setForm({ topik: '', link_instagram: '', views: '', table_id: defaultJenis, jenis: defaultJenis, deskripsi: '', competitor_id: '', content_type: '' })
             }
         }
     }, [open, mode, initialData, defaultTableId])
 
     const handleSave = async () => {
-        if (!form.topik.trim() || !form.table_id) return
+        if (!form.topik.trim() || !form.jenis) return
         setIsSaving(true)
         setSaveError(null)
         try {
@@ -189,7 +191,7 @@ function SidebarForm({ open, mode, initialData, tables, competitors, defaultTabl
                 topik: form.topik.trim(),
                 link_instagram: form.link_instagram.trim(),
                 views: parseInt(form.views.replace(/\D/g, ''), 10) || 0,
-                table_id: form.table_id,
+                table_id: form.jenis || null,
                 jenis: form.jenis || null,
                 deskripsi: form.deskripsi.trim() || null,
                 competitor_id: form.competitor_id || null,
@@ -263,30 +265,15 @@ function SidebarForm({ open, mode, initialData, tables, competitors, defaultTabl
 
                 {/* Body */}
                 <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
-                    {/* Grup / Table */}
+                    {/* Jenis (sekaligus mengisi table_id) */}
                     <div>
-                        <label className="block text-xs text-zinc-400 mb-1.5">Grup / Tabel <span className="text-red-400">*</span></label>
-                        <select
-                            value={form.table_id}
-                            onChange={e => setForm(p => ({ ...p, table_id: e.target.value }))}
-                            className="w-full rounded-lg bg-[#1f1f1f] border border-[#3a3a3a] px-3 py-2 text-sm text-white outline-none focus:border-dz-primary transition-colors appearance-none"
-                        >
-                            <option value="" disabled>Pilih Grup...</option>
-                            {contentTypeTables.map(t => (
-                                <option key={t.id} value={t.id}>{t.title}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {/* Jenis */}
-                    <div>
-                        <label className="block text-xs text-zinc-400 mb-1.5">Jenis</label>
+                        <label className="block text-xs text-zinc-400 mb-1.5">Jenis <span className="text-red-400">*</span></label>
                         <select
                             value={form.jenis}
-                            onChange={e => setForm(p => ({ ...p, jenis: e.target.value }))}
+                            onChange={e => setForm(p => ({ ...p, jenis: e.target.value, table_id: e.target.value }))}
                             className="w-full rounded-lg bg-[#1f1f1f] border border-[#3a3a3a] px-3 py-2 text-sm text-white outline-none focus:border-dz-primary transition-colors appearance-none"
                         >
-                            <option value="">— Pilih Jenis —</option>
+                            <option value="" disabled>Pilih Jenis...</option>
                             {contentTypeTables.map(t => (
                                 <option key={t.id} value={t.id}>{t.title}</option>
                             ))}
@@ -398,7 +385,7 @@ function SidebarForm({ open, mode, initialData, tables, competitors, defaultTabl
                         </button>
                         <button
                             onClick={handleSave}
-                            disabled={isSaving || !form.topik.trim() || !form.table_id}
+                            disabled={isSaving || !form.topik.trim() || !form.jenis}
                             className="flex items-center gap-1.5 rounded-lg bg-dz-primary px-4 py-1.5 text-xs text-white hover:bg-[#007042] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
