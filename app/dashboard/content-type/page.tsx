@@ -18,6 +18,8 @@ interface ContentType {
     views: number
     table_id: string
     competitor_id: string | null
+    bulan: number | null
+    tahun: number | null
     created_at?: string
 }
 
@@ -27,7 +29,7 @@ interface Competitor {
 }
 
 type SortDir = 'asc' | 'desc'
-type SortField = 'topik' | 'link_instagram' | 'views' | 'table_id' | 'competitor_id'
+type SortField = 'topik' | 'link_instagram' | 'views' | 'table_id' | 'competitor_id' | 'periode'
 
 function formatViews(n: number): string {
     if (!n && n !== 0) return '—'
@@ -36,8 +38,18 @@ function formatViews(n: number): string {
     return n.toString()
 }
 
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+const MONTH_NAMES_FULL = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+
+function formatPeriode(bulan: number | null, tahun: number | null): string {
+    if (!bulan && !tahun) return '—'
+    const b = bulan ? MONTH_NAMES[bulan - 1] : ''
+    const t = tahun ? String(tahun) : ''
+    return [b, t].filter(Boolean).join(' ')
+}
+
 // ─── Column widths state ───────────────────────────────────────────────────────
-const DEFAULT_WIDTHS = { no: 40, topik: 230, edit: 130, link_instagram: 160, competitor: 160, jenis: 160, type_col: 140, views: 70 }
+const DEFAULT_WIDTHS = { no: 40, topik: 230, edit: 130, link_instagram: 160, competitor: 160, jenis: 160, type_col: 140, periode: 100, views: 70 }
 
 // ─── Competitor Picker Modal ─────────────────────────────────────────────────
 interface CompetitorPickerModalProps {
@@ -156,7 +168,7 @@ interface SidebarFormProps {
 }
 
 function SidebarForm({ open, mode, initialData, tables, competitors, defaultTableId, onClose, onSaved }: SidebarFormProps) {
-    const [form, setForm] = useState({ topik: '', link_instagram: '', views: '', table_id: '', jenis: '', deskripsi: '', competitor_id: '', content_type: '' })
+    const [form, setForm] = useState({ topik: '', link_instagram: '', views: '', table_id: '', jenis: '', deskripsi: '', competitor_id: '', content_type: '', bulan: '', tahun: '' })
     const [isSaving, setIsSaving] = useState(false)
     const [saveError, setSaveError] = useState<string | null>(null)
     const [showCompetitorPicker, setShowCompetitorPicker] = useState(false)
@@ -174,10 +186,12 @@ function SidebarForm({ open, mode, initialData, tables, competitors, defaultTabl
                     deskripsi: initialData.deskripsi || '',
                     competitor_id: initialData.competitor_id || '',
                     content_type: initialData.content_type || '',
+                    bulan: initialData.bulan != null ? String(initialData.bulan) : '',
+                    tahun: initialData.tahun != null ? String(initialData.tahun) : '',
                 })
             } else {
                 const defaultJenis = defaultTableId === 'all' ? '' : defaultTableId
-                setForm({ topik: '', link_instagram: '', views: '', table_id: defaultJenis, jenis: defaultJenis, deskripsi: '', competitor_id: '', content_type: '' })
+                setForm({ topik: '', link_instagram: '', views: '', table_id: defaultJenis, jenis: defaultJenis, deskripsi: '', competitor_id: '', content_type: '', bulan: '', tahun: '' })
             }
         }
     }, [open, mode, initialData, defaultTableId])
@@ -196,6 +210,8 @@ function SidebarForm({ open, mode, initialData, tables, competitors, defaultTabl
                 deskripsi: form.deskripsi.trim() || null,
                 competitor_id: form.competitor_id || null,
                 content_type: form.content_type || null,
+                bulan: form.bulan ? parseInt(form.bulan) : null,
+                tahun: form.tahun ? parseInt(form.tahun) : null,
             }
 
             let res: Response
@@ -278,6 +294,33 @@ function SidebarForm({ open, mode, initialData, tables, competitors, defaultTabl
                                 <option key={t.id} value={t.id}>{t.title}</option>
                             ))}
                         </select>
+                    </div>
+
+                    {/* Periode: Bulan + Tahun */}
+                    <div>
+                        <label className="block text-xs text-zinc-400 mb-1.5">Periode</label>
+                        <div className="flex gap-2">
+                            <select
+                                value={form.bulan}
+                                onChange={e => setForm(p => ({ ...p, bulan: e.target.value }))}
+                                className="flex-1 rounded-lg bg-[#1f1f1f] border border-[#3a3a3a] px-3 py-2 text-sm text-white outline-none focus:border-dz-primary transition-colors appearance-none"
+                            >
+                                <option value="">— Bulan —</option>
+                                {MONTH_NAMES_FULL.map((name, i) => (
+                                    <option key={i + 1} value={String(i + 1)}>{name}</option>
+                                ))}
+                            </select>
+                            <select
+                                value={form.tahun}
+                                onChange={e => setForm(p => ({ ...p, tahun: e.target.value }))}
+                                className="w-28 rounded-lg bg-[#1f1f1f] border border-[#3a3a3a] px-3 py-2 text-sm text-white outline-none focus:border-dz-primary transition-colors appearance-none"
+                            >
+                                <option value="">— Tahun —</option>
+                                {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 2 + i).map(y => (
+                                    <option key={y} value={String(y)}>{y}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
 
                     {/* Link Instagram */}
@@ -553,6 +596,14 @@ export default function ContentTypePage() {
 
     const sorted = [...filteredRows].sort((a, b) => {
         if (!sortField) return 0
+
+        // 'periode' bukan field di ContentType, handle duluan
+        if (sortField === 'periode') {
+            const va = (a.tahun ?? 0) * 12 + (a.bulan ?? 0)
+            const vb = (b.tahun ?? 0) * 12 + (b.bulan ?? 0)
+            return sortDir === 'asc' ? va - vb : vb - va
+        }
+
         let va: any = a[sortField]
         let vb: any = b[sortField]
 
@@ -653,7 +704,7 @@ export default function ContentTypePage() {
         </th>
     )
 
-    const totalWidth = 40 + colWidths.no + colWidths.topik + colWidths.edit + colWidths.link_instagram + colWidths.competitor + colWidths.jenis + colWidths.type_col + colWidths.views
+    const totalWidth = 40 + colWidths.no + colWidths.topik + colWidths.edit + colWidths.link_instagram + colWidths.competitor + colWidths.jenis + colWidths.type_col + colWidths.periode + colWidths.views
 
     const activeTable = tables.find(t => t.id === activeTableId)
     const contentTypeTables = tables.filter(t => t.type === 'content-type')
@@ -791,6 +842,7 @@ export default function ContentTypePage() {
                                             <col style={{ width: colWidths.link_instagram }} />
                                             <col style={{ width: colWidths.competitor }} />
                                             <col style={{ width: colWidths.jenis }} />
+                                            <col style={{ width: colWidths.periode }} />
                                             <col style={{ width: colWidths.type_col }} />
                                             <col style={{ width: colWidths.views }} />
                                         </colgroup>
@@ -831,6 +883,7 @@ export default function ContentTypePage() {
                                                 {renderSortHeader('Link Instagram', 'link_instagram', 'link_instagram')}
                                                 {renderSortHeader('Competitor', 'competitor_id', 'competitor')}
                                                 {renderSortHeader('Jenis', 'table_id', 'jenis')}
+                                                {renderSortHeader('Periode', 'periode', 'periode')}
                                                 {/* Type header */}
                                                 <th
                                                     className="border border-[#2e2e2e] py-2 px-3 text-xs font-semibold uppercase text-zinc-500 relative select-none"
@@ -848,7 +901,7 @@ export default function ContentTypePage() {
                                         <tbody>
                                             {sorted.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan={9} className="py-12 text-center text-zinc-600 text-sm italic">
+                                                    <td colSpan={10} className="py-12 text-center text-zinc-600 text-sm italic">
                                                         Belum ada data di grup ini. Klik &quot;Tambah&quot;.
                                                     </td>
                                                 </tr>
@@ -948,6 +1001,12 @@ export default function ContentTypePage() {
                                                                     <option key={t.id} value={t.id}>{t.title}</option>
                                                                 ))}
                                                             </select>
+                                                        </td>
+                                                        {/* Periode — read only */}
+                                                        <td className="border border-[#2e2e2e] py-2 px-3">
+                                                            <span className="text-xs text-zinc-400 font-mono">
+                                                                {formatPeriode(row.bulan, row.tahun)}
+                                                            </span>
                                                         </td>
                                                         {/* Type Inline Select */}
                                                         <td className="border border-[#2e2e2e] py-1.5 px-2">
