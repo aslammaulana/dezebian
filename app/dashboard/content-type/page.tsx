@@ -37,7 +37,7 @@ function formatViews(n: number): string {
 }
 
 // ─── Column widths state ───────────────────────────────────────────────────────
-const DEFAULT_WIDTHS = { no: 40, topik: 230, edit: 130, link_instagram: 230, competitor: 160, jenis: 160, type_col: 140, views: 70 }
+const DEFAULT_WIDTHS = { no: 40, topik: 230, edit: 130, link_instagram: 160, competitor: 160, jenis: 160, type_col: 140, views: 70 }
 
 // ─── Competitor Picker Modal ─────────────────────────────────────────────────
 interface CompetitorPickerModalProps {
