@@ -21,11 +21,11 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
     const body = await req.json()
-    const { topik, link_instagram = '', jenis = null, deskripsi = null, views = 0, table_id, competitor_id = null, content_type = null } = body
+    const { topik, link_instagram = '', jenis = null, deskripsi = null, views = 0, table_id, competitor_id = null, content_type = null, bulan = null, tahun = null } = body
 
     const { data, error } = await supabaseAdmin
         .from('content_types')
-        .insert({ topik, link_instagram, jenis, deskripsi, views, table_id, competitor_id, content_type })
+        .insert({ topik, link_instagram, jenis, deskripsi, views, table_id, competitor_id, content_type, bulan, tahun })
         .select()
         .single()
 
