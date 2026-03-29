@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Plus, Trash2, RefreshCw, LayoutTemplate, ChevronsUpDown, X, Save, Pencil, ExternalLink, Loader2, Eye, FileText } from 'lucide-react'
+import { Plus, Trash2, RefreshCw, LayoutTemplate, ChevronsUpDown, X, Save, Pencil, ExternalLink, Loader2, Eye, FileText, Search, UserSearch } from 'lucide-react'
 import clsx from 'clsx'
 
 import { ContentTable } from '@/lib/types'
@@ -38,6 +38,110 @@ function formatViews(n: number): string {
 // ─── Column widths state ───────────────────────────────────────────────────────
 const DEFAULT_WIDTHS = { no: 40, topik: 230, edit: 130, link_instagram: 230, competitor: 160, jenis: 160, views: 70 }
 
+// ─── Competitor Picker Modal ─────────────────────────────────────────────────
+interface CompetitorPickerModalProps {
+    open: boolean
+    competitors: Competitor[]
+    selectedId: string
+    onSelect: (id: string, name: string) => void
+    onClose: () => void
+}
+
+function CompetitorPickerModal({ open, competitors, selectedId, onSelect, onClose }: CompetitorPickerModalProps) {
+    const [search, setSearch] = useState('')
+    const inputRef = useRef<HTMLInputElement>(null)
+
+    useEffect(() => {
+        if (open) {
+            setSearch('')
+            setTimeout(() => inputRef.current?.focus(), 50)
+        }
+    }, [open])
+
+    const filtered = competitors.filter(c =>
+        c.competitor.toLowerCase().includes(search.toLowerCase())
+    )
+
+    if (!open) return null
+
+    return (
+        <div
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/2 backdrop-blur-sm"
+            onClick={onClose}
+        >
+            <div
+                className="w-full max-w-sm bg-[#141414] border border-[#2e2e2e] rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+                onClick={e => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-[#2e2e2e] bg-[#1A1A1A]">
+                    <div className="flex items-center gap-2">
+                        <UserSearch size={15} className="text-zinc-400" />
+                        <span className="text-sm font-semibold text-white">Pilih Competitor</span>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="p-1 rounded-lg text-zinc-500 hover:bg-[#27272a] hover:text-white transition-colors cursor-pointer"
+                    >
+                        <X size={15} />
+                    </button>
+                </div>
+
+                {/* Search */}
+                <div className="px-3 py-2.5 border-b border-[#2e2e2e]">
+                    <div className="flex items-center gap-2 rounded-lg bg-[#1f1f1f] border border-[#3a3a3a] px-3 py-1.5 focus-within:border-[#ffffff31] transition-colors">
+                        <Search size={13} className="text-zinc-500 shrink-0" />
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            placeholder="Cari competitor..."
+                            className="flex-1 bg-transparent text-sm text-white placeholder-zinc-600 outline-none"
+                        />
+                        {search && (
+                            <button onClick={() => setSearch('')} className="text-zinc-500 hover:text-white transition-colors cursor-pointer">
+                                <X size={12} />
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* List */}
+                <div className="overflow-y-auto max-h-64 py-1 scrollbar-thin">
+                    {/* Tidak ada option */}
+                    <button
+                        onClick={() => { onSelect('', '—'); onClose() }}
+                        className={`w-full text-left px-4 py-2 text-sm transition-colors cursor-pointer ${selectedId === ''
+                            ? 'bg-dz-primary text-white/80'
+                            : 'text-zinc-500 hover:bg-[#27272a] hover:text-white'
+                            }`}
+                    >
+                        — Tidak ada —
+                    </button>
+
+                    {filtered.length === 0 && search && (
+                        <p className="px-4 py-3 text-xs text-zinc-600 italic">Tidak ditemukan "{search}"</p>
+                    )}
+
+                    {filtered.map(c => (
+                        <button
+                            key={c.id}
+                            onClick={() => { onSelect(c.id, c.competitor); onClose() }}
+                            className={`w-full text-left px-4 py-2 text-sm transition-colors cursor-pointer ${selectedId === c.id
+                                ? 'bg-dz-primary text-white/80'
+                                : 'text-zinc-200 hover:bg-[#27272a] hover:text-white'
+                                }`}
+                        >
+                            {c.competitor}
+                        </button>
+                    ))}
+                </div>
+            </div>
+        </div>
+    )
+}
+
 // ─── Sidebar Form ─────────────────────────────────────────────────────────────
 interface SidebarFormProps {
     open: boolean
@@ -53,6 +157,7 @@ interface SidebarFormProps {
 function SidebarForm({ open, mode, initialData, tables, competitors, defaultTableId, onClose, onSaved }: SidebarFormProps) {
     const [form, setForm] = useState({ topik: '', link_instagram: '', views: '', table_id: '', deskripsi: '', competitor_id: '' })
     const [isSaving, setIsSaving] = useState(false)
+    const [showCompetitorPicker, setShowCompetitorPicker] = useState(false)
 
     useEffect(() => {
         if (open) {
@@ -189,16 +294,26 @@ function SidebarForm({ open, mode, initialData, tables, competitors, defaultTabl
                     {/* Competitor */}
                     <div>
                         <label className="block text-xs text-zinc-400 mb-1.5">Competitor (Referensi)</label>
-                        <select
-                            value={form.competitor_id}
-                            onChange={e => setForm(p => ({ ...p, competitor_id: e.target.value }))}
-                            className="w-full rounded-lg bg-[#1f1f1f] border border-[#3a3a3a] px-3 py-2 text-sm text-white outline-none focus:border-dz-primary transition-colors appearance-none"
+                        <button
+                            type="button"
+                            onClick={() => setShowCompetitorPicker(true)}
+                            className="w-full flex items-center justify-between rounded-lg bg-[#1f1f1f] border border-[#3a3a3a] px-3 py-2 text-sm text-left transition-colors hover:border-dz-primary/50 cursor-pointer"
                         >
-                            <option value="">— Tidak ada —</option>
-                            {competitors.map(c => (
-                                <option key={c.id} value={c.id}>{c.competitor}</option>
-                            ))}
-                        </select>
+                            <span className={form.competitor_id ? 'text-white' : 'text-zinc-600'}>
+                                {form.competitor_id
+                                    ? competitors.find(c => c.id === form.competitor_id)?.competitor || '— Tidak ada —'
+                                    : '— Tidak ada —'
+                                }
+                            </span>
+                            <UserSearch size={14} className="text-zinc-500 shrink-0" />
+                        </button>
+                        <CompetitorPickerModal
+                            open={showCompetitorPicker}
+                            competitors={competitors}
+                            selectedId={form.competitor_id}
+                            onSelect={(id) => setForm(p => ({ ...p, competitor_id: id }))}
+                            onClose={() => setShowCompetitorPicker(false)}
+                        />
                     </div>
 
                     {/* Views */}
@@ -250,6 +365,7 @@ function SidebarForm({ open, mode, initialData, tables, competitors, defaultTabl
 }
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
+type CompetitorPickerTarget = { rowId: string; currentId: string } | null
 export default function ContentTypePage() {
     const [tables, setTables] = useState<ContentTable[]>([])
     const [activeTableId, setActiveTableId] = useState<string>('')
@@ -271,6 +387,9 @@ export default function ContentTypePage() {
     // Deskripsi popup state
     const [deskripsiPopup, setDeskripsiPopup] = useState<ContentType | null>(null)
     const [editingRow, setEditingRow] = useState<ContentType | null>(null)
+
+    // Competitor picker popup state (for table inline)
+    const [competitorPickerTarget, setCompetitorPickerTarget] = useState<CompetitorPickerTarget>(null)
 
     // Sort
     const [sortField, setSortField] = useState<SortField | null>(null)
@@ -708,18 +827,22 @@ export default function ContentTypePage() {
                                                                 <span className="text-zinc-600 italic text-sm">—</span>
                                                             )}
                                                         </td>
-                                                        {/* Competitor inline select */}
+                                                        {/* Competitor inline button */}
                                                         <td className="border border-[#2e2e2e] py-1.5 px-2">
-                                                            <select
-                                                                value={row.competitor_id || ''}
-                                                                onChange={(e) => handleDirectUpdate(row.id, 'competitor_id', e.target.value)}
-                                                                className="w-full truncate rounded px-1.5 py-1 text-xs outline-none transition-colors bg-[#27272a] text-zinc-300 hover:text-white cursor-pointer focus:border-dz-primary border border-transparent focus:border-solid hover:bg-[#3a3a3a]"
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setCompetitorPickerTarget({ rowId: row.id, currentId: row.competitor_id || '' })}
+                                                                className="w-full flex items-center justify-between gap-1 truncate rounded px-1.5 py-1 text-xs transition-colors bg-[#27272a] text-zinc-300 hover:text-white hover:bg-[#3a3a3a] cursor-pointer border border-transparent hover:border-dz-primary/40"
+                                                                title="Pilih Competitor"
                                                             >
-                                                                <option value="">—</option>
-                                                                {competitors.map(c => (
-                                                                    <option key={c.id} value={c.id}>{c.competitor}</option>
-                                                                ))}
-                                                            </select>
+                                                                <span className="truncate">
+                                                                    {row.competitor_id
+                                                                        ? competitors.find(c => c.id === row.competitor_id)?.competitor || '—'
+                                                                        : '—'
+                                                                    }
+                                                                </span>
+                                                                <UserSearch size={11} className="shrink-0 text-zinc-500" />
+                                                            </button>
                                                         </td>
                                                         {/* Jenis Inline Select */}
                                                         <td className="border border-[#2e2e2e] py-1.5 px-2">
@@ -773,6 +896,19 @@ export default function ContentTypePage() {
                 defaultTableId={activeTableId}
                 onClose={closeFormSidebar}
                 onSaved={fetchData}
+            />
+
+            {/* Competitor Picker Modal (for table inline) */}
+            <CompetitorPickerModal
+                open={competitorPickerTarget !== null}
+                competitors={competitors}
+                selectedId={competitorPickerTarget?.currentId || ''}
+                onSelect={(id) => {
+                    if (competitorPickerTarget) {
+                        handleDirectUpdate(competitorPickerTarget.rowId, 'competitor_id', id)
+                    }
+                }}
+                onClose={() => setCompetitorPickerTarget(null)}
             />
 
             {/* Deskripsi Popup */}
