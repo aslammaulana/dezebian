@@ -13,6 +13,7 @@ interface ContentType {
     topik: string
     link_instagram: string
     jenis: string | null
+    content_type: string | null
     deskripsi: string | null
     views: number
     table_id: string
@@ -26,7 +27,7 @@ interface Competitor {
 }
 
 type SortDir = 'asc' | 'desc'
-type SortField = 'topik' | 'link_instagram' | 'views' | 'table_id'
+type SortField = 'topik' | 'link_instagram' | 'views' | 'table_id' | 'competitor_id'
 
 function formatViews(n: number): string {
     if (!n && n !== 0) return '—'
@@ -36,7 +37,7 @@ function formatViews(n: number): string {
 }
 
 // ─── Column widths state ───────────────────────────────────────────────────────
-const DEFAULT_WIDTHS = { no: 40, topik: 230, edit: 130, link_instagram: 230, competitor: 160, jenis: 160, views: 70 }
+const DEFAULT_WIDTHS = { no: 40, topik: 230, edit: 130, link_instagram: 230, competitor: 160, jenis: 160, type_col: 140, views: 70 }
 
 // ─── Competitor Picker Modal ─────────────────────────────────────────────────
 interface CompetitorPickerModalProps {
@@ -155,8 +156,9 @@ interface SidebarFormProps {
 }
 
 function SidebarForm({ open, mode, initialData, tables, competitors, defaultTableId, onClose, onSaved }: SidebarFormProps) {
-    const [form, setForm] = useState({ topik: '', link_instagram: '', views: '', table_id: '', deskripsi: '', competitor_id: '' })
+    const [form, setForm] = useState({ topik: '', link_instagram: '', views: '', table_id: '', deskripsi: '', competitor_id: '', content_type: '' })
     const [isSaving, setIsSaving] = useState(false)
+    const [saveError, setSaveError] = useState<string | null>(null)
     const [showCompetitorPicker, setShowCompetitorPicker] = useState(false)
 
     useEffect(() => {
@@ -169,9 +171,10 @@ function SidebarForm({ open, mode, initialData, tables, competitors, defaultTabl
                     table_id: initialData.table_id || defaultTableId,
                     deskripsi: initialData.deskripsi || '',
                     competitor_id: initialData.competitor_id || '',
+                    content_type: initialData.content_type || '',
                 })
             } else {
-                setForm({ topik: '', link_instagram: '', views: '', table_id: defaultTableId === 'all' ? '' : defaultTableId, deskripsi: '', competitor_id: '' })
+                setForm({ topik: '', link_instagram: '', views: '', table_id: defaultTableId === 'all' ? '' : defaultTableId, deskripsi: '', competitor_id: '', content_type: '' })
             }
         }
     }, [open, mode, initialData, defaultTableId])
@@ -179,6 +182,7 @@ function SidebarForm({ open, mode, initialData, tables, competitors, defaultTabl
     const handleSave = async () => {
         if (!form.topik.trim() || !form.table_id) return
         setIsSaving(true)
+        setSaveError(null)
         try {
             const payload = {
                 topik: form.topik.trim(),
@@ -187,6 +191,7 @@ function SidebarForm({ open, mode, initialData, tables, competitors, defaultTabl
                 table_id: form.table_id,
                 deskripsi: form.deskripsi.trim() || null,
                 competitor_id: form.competitor_id || null,
+                content_type: form.content_type || null,
             }
 
             let res: Response
@@ -207,9 +212,13 @@ function SidebarForm({ open, mode, initialData, tables, competitors, defaultTabl
             if (res.ok) {
                 onSaved()
                 onClose()
+            } else {
+                const errData = await res.json().catch(() => ({}))
+                setSaveError(errData?.error || 'Gagal menyimpan. Cek koneksi atau struktur database.')
             }
         } catch (err) {
             console.error(err)
+            setSaveError('Terjadi kesalahan jaringan.')
         } finally {
             setIsSaving(false)
         }
@@ -316,6 +325,22 @@ function SidebarForm({ open, mode, initialData, tables, competitors, defaultTabl
                         />
                     </div>
 
+                    {/* Type */}
+                    <div>
+                        <label className="block text-xs text-zinc-400 mb-1.5">Type</label>
+                        <select
+                            value={form.content_type}
+                            onChange={e => setForm(p => ({ ...p, content_type: e.target.value }))}
+                            className="w-full rounded-lg bg-[#1f1f1f] border border-[#3a3a3a] px-3 py-2 text-sm text-white outline-none focus:border-dz-primary transition-colors appearance-none"
+                        >
+                            <option value="">— Pilih Type —</option>
+                            <option value="No Face">No Face</option>
+                            <option value="No Face + VO">No Face + VO</option>
+                            <option value="VO">VO</option>
+                            <option value="VO + Face">VO + Face</option>
+                        </select>
+                    </div>
+
                     {/* Views */}
                     <div>
                         <label className="block text-xs text-zinc-400 mb-1.5">Views</label>
@@ -343,21 +368,26 @@ function SidebarForm({ open, mode, initialData, tables, competitors, defaultTabl
                 </div>
 
                 {/* Footer */}
-                <div className="shrink-0 border-t border-[#2e2e2e] px-5 py-4 flex gap-2 justify-end">
-                    <button
-                        onClick={onClose}
-                        className="rounded-lg px-4 py-1.5 text-xs text-zinc-400 hover:bg-[#27272a] hover:text-white transition-colors cursor-pointer"
-                    >
-                        Batal
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        disabled={isSaving || !form.topik.trim() || !form.table_id}
-                        className="flex items-center gap-1.5 rounded-lg bg-dz-primary px-4 py-1.5 text-xs text-white hover:bg-[#007042] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
-                        {isSaving ? 'Menyimpan...' : 'Simpan'}
-                    </button>
+                <div className="shrink-0 border-t border-[#2e2e2e] px-5 py-4 flex flex-col gap-2">
+                    {saveError && (
+                        <p className="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{saveError}</p>
+                    )}
+                    <div className="flex gap-2 justify-end">
+                        <button
+                            onClick={onClose}
+                            className="rounded-lg px-4 py-1.5 text-xs text-zinc-400 hover:bg-[#27272a] hover:text-white transition-colors cursor-pointer"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            onClick={handleSave}
+                            disabled={isSaving || !form.topik.trim() || !form.table_id}
+                            className="flex items-center gap-1.5 rounded-lg bg-dz-primary px-4 py-1.5 text-xs text-white hover:bg-[#007042] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                            {isSaving ? 'Menyimpan...' : 'Simpan'}
+                        </button>
+                    </div>
                 </div>
             </div>
         </>
@@ -518,6 +548,11 @@ export default function ContentTypePage() {
             vb = tables.find(t => t.id === b.table_id)?.title || ''
         }
 
+        if (sortField === 'competitor_id') {
+            va = competitors.find(c => c.id === a.competitor_id)?.competitor || ''
+            vb = competitors.find(c => c.id === b.competitor_id)?.competitor || ''
+        }
+
         if (typeof va === 'number' && typeof vb === 'number')
             return sortDir === 'asc' ? va - vb : vb - va
         return sortDir === 'asc'
@@ -605,7 +640,7 @@ export default function ContentTypePage() {
         </th>
     )
 
-    const totalWidth = 40 + colWidths.no + colWidths.topik + colWidths.edit + colWidths.link_instagram + colWidths.competitor + colWidths.jenis + colWidths.views
+    const totalWidth = 40 + colWidths.no + colWidths.topik + colWidths.edit + colWidths.link_instagram + colWidths.competitor + colWidths.jenis + colWidths.type_col + colWidths.views
 
     const activeTable = tables.find(t => t.id === activeTableId)
     const contentTypeTables = tables.filter(t => t.type === 'content-type')
@@ -701,6 +736,7 @@ export default function ContentTypePage() {
                                             <col style={{ width: colWidths.link_instagram }} />
                                             <col style={{ width: colWidths.competitor }} />
                                             <col style={{ width: colWidths.jenis }} />
+                                            <col style={{ width: colWidths.type_col }} />
                                             <col style={{ width: colWidths.views }} />
                                         </colgroup>
                                         <thead className="bg-[#1A1A1A] sticky top-0 z-10">
@@ -738,18 +774,19 @@ export default function ContentTypePage() {
                                                     />
                                                 </th>
                                                 {renderSortHeader('Link Instagram', 'link_instagram', 'link_instagram')}
-                                                {/* Competitor header */}
+                                                {renderSortHeader('Competitor', 'competitor_id', 'competitor')}
+                                                {renderSortHeader('Jenis', 'table_id', 'jenis')}
+                                                {/* Type header */}
                                                 <th
                                                     className="border border-[#2e2e2e] py-2 px-3 text-xs font-semibold uppercase text-zinc-500 relative select-none"
-                                                    style={{ width: colWidths.competitor }}
+                                                    style={{ width: colWidths.type_col }}
                                                 >
-                                                    Competitor
+                                                    Type
                                                     <span
-                                                        onMouseDown={e => startResize('competitor', e)}
+                                                        onMouseDown={e => startResize('type_col', e)}
                                                         className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-dz-primary/50 transition-colors"
                                                     />
                                                 </th>
-                                                {renderSortHeader('Jenis', 'table_id', 'jenis')}
                                                 {renderSortHeader('Views', 'views', 'views')}
                                             </tr>
                                         </thead>
@@ -855,6 +892,20 @@ export default function ContentTypePage() {
                                                                 {contentTypeTables.map(t => (
                                                                     <option key={t.id} value={t.id}>{t.title}</option>
                                                                 ))}
+                                                            </select>
+                                                        </td>
+                                                        {/* Type Inline Select */}
+                                                        <td className="border border-[#2e2e2e] py-1.5 px-2">
+                                                            <select
+                                                                value={row.content_type || ''}
+                                                                onChange={(e) => handleDirectUpdate(row.id, 'content_type', e.target.value)}
+                                                                className="w-full truncate rounded px-1.5 py-1 text-xs outline-none transition-colors bg-[#27272a] text-zinc-300 hover:text-white cursor-pointer focus:border-dz-primary border border-transparent focus:border-solid hover:bg-[#3a3a3a]"
+                                                            >
+                                                                <option value="">—</option>
+                                                                <option value="No Face">No Face</option>
+                                                                <option value="No Face + VO">No Face + VO</option>
+                                                                <option value="VO">VO</option>
+                                                                <option value="VO + Face">VO + Face</option>
                                                             </select>
                                                         </td>
                                                         {/* Views */}
