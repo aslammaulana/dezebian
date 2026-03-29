@@ -86,3 +86,19 @@ create table if not exists select_options (
 -- (Tidak ada seed data — tambahkan opsi lewat halaman /dashboard/kategori-konten)
 
 
+-- =============================================================
+-- 5. Tabel untuk Content Type (/dashboard/content-type)
+-- =============================================================
+create table if not exists content_types (
+    id             uuid primary key default gen_random_uuid(),
+    topik          text not null default '',
+    link_instagram text not null default '',
+    jenis          uuid references content_tables(id) on delete set null,
+    deskripsi      text,
+    views          int not null default 0,
+    table_id       uuid not null references content_tables(id) on delete cascade,
+    created_at     timestamptz not null default now()
+);
+
+-- content_types menggunakan content_tables dengan type = 'content-type'
+-- Buat tabel grup via halaman /dashboard/content-type → sidebar "New Table"

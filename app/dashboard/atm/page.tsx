@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Trash2, RefreshCw, Telescope, X, ExternalLink } from 'lucide-react'
+import { Plus, Trash2, RefreshCw, Telescope, X, ExternalLink, Pin, Pencil } from 'lucide-react'
 import clsx from 'clsx'
 
 interface AtmEntry {
@@ -10,37 +10,39 @@ interface AtmEntry {
     topik: string
     problem: string
     solusi: string
-    visual: string
-    hook_script: string
+    pinned?: boolean
     created_at?: string
 }
 
-const FIELDS: { key: keyof Omit<AtmEntry, 'id' | 'created_at'>; label: string; multiline?: boolean }[] = [
+const FIELDS: { key: keyof AtmForm; label: string; multiline?: boolean }[] = [
     { key: 'link_instagram', label: 'Link Instagram' },
     { key: 'topik', label: 'Topik' },
     { key: 'problem', label: 'Problem', multiline: true },
     { key: 'solusi', label: 'Solusi', multiline: true },
-    { key: 'visual', label: 'Visual', multiline: true },
-    { key: 'hook_script', label: 'Hook Script', multiline: true },
 ]
 
 // ─── Sidebar (slide from right) ───────────────────────────────────────────────
+interface AtmForm {
+    link_instagram: string
+    topik: string
+    problem: string
+    solusi: string
+}
+
 interface SidebarProps {
     isOpen: boolean
     entry: Partial<AtmEntry> | null
     isNew: boolean
     onClose: () => void
-    onSave: (data: Omit<AtmEntry, 'id' | 'created_at'>) => void
+    onSave: (data: AtmForm) => void
 }
 
 function AtmSidebar({ isOpen, entry, isNew, onClose, onSave }: SidebarProps) {
-    const [form, setForm] = useState<Omit<AtmEntry, 'id' | 'created_at'>>({
+    const [form, setForm] = useState<AtmForm>({
         link_instagram: '',
         topik: '',
         problem: '',
         solusi: '',
-        visual: '',
-        hook_script: '',
     })
 
     // Reset form when entry changes
@@ -50,8 +52,6 @@ function AtmSidebar({ isOpen, entry, isNew, onClose, onSave }: SidebarProps) {
             topik: entry?.topik ?? '',
             problem: entry?.problem ?? '',
             solusi: entry?.solusi ?? '',
-            visual: entry?.visual ?? '',
-            hook_script: entry?.hook_script ?? '',
         })
     }, [entry])
 
@@ -60,6 +60,15 @@ function AtmSidebar({ isOpen, entry, isNew, onClose, onSave }: SidebarProps) {
 
     return (
         <>
+            {/* Backdrop */}
+            <div
+                className={clsx(
+                    'fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity duration-300',
+                    isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+                )}
+                onClick={onClose}
+            />
+
             {/* Sidebar panel */}
             <aside
                 className={clsx(
@@ -90,7 +99,7 @@ function AtmSidebar({ isOpen, entry, isNew, onClose, onSave }: SidebarProps) {
                             </label>
                             {multiline ? (
                                 <textarea
-                                    value={form[key]}
+                                    value={form[key] as string}
                                     onChange={e => handleChange(key, e.target.value)}
                                     rows={4}
                                     className="w-full rounded-lg border border-[#3a3a3a] bg-[#1f1f1f] px-3 py-2.5 text-sm text-white outline-none focus:border-dz-primary resize-none scrollbar-thin transition-colors"
@@ -99,7 +108,7 @@ function AtmSidebar({ isOpen, entry, isNew, onClose, onSave }: SidebarProps) {
                             ) : (
                                 <input
                                     type="text"
-                                    value={form[key]}
+                                    value={form[key] as string}
                                     onChange={e => handleChange(key, e.target.value)}
                                     className="w-full rounded-lg border border-[#3a3a3a] bg-[#1f1f1f] px-3 py-2.5 text-sm text-white outline-none focus:border-dz-primary transition-colors"
                                     placeholder={`Masukkan ${label.toLowerCase()}...`}
@@ -176,7 +185,7 @@ export default function AtmPage() {
     useEffect(() => { fetchData() }, [fetchData])
 
     const openCreate = () => {
-        setActiveEntry({ link_instagram: '', topik: '', problem: '', solusi: '', visual: '', hook_script: '' })
+        setActiveEntry({ link_instagram: '', topik: '', problem: '', solusi: '' })
         setIsNew(true)
         setSidebarOpen(true)
     }
@@ -218,6 +227,26 @@ export default function AtmPage() {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ids: selectedIds }),
+        })
+    }
+
+    const handleDeleteOne = async (id: string, e: React.MouseEvent) => {
+        e.stopPropagation()
+        setEntries(prev => prev.filter(entry => entry.id !== id))
+        await fetch('/api/atm', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: [id] }),
+        })
+    }
+
+    const handleTogglePin = async (id: string, currentPinned: boolean, e: React.MouseEvent) => {
+        e.stopPropagation()
+        setEntries(prev => prev.map(entry => entry.id === id ? { ...entry, pinned: !currentPinned } : entry))
+        await fetch('/api/atm', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, pinned: !currentPinned }),
         })
     }
 
@@ -270,68 +299,102 @@ export default function AtmPage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {entries.map((entry, idx) => {
-                            const isSelected = selectedIds.includes(entry.id)
-                            return (
+                        {[...entries].sort((a, b) => {
+                            if ((b.pinned ? 1 : 0) !== (a.pinned ? 1 : 0)) return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)
+                            return new Date(b.created_at ?? '').getTime() - new Date(a.created_at ?? '').getTime()
+                        }).map((entry, idx) => (
+                            <div
+                                key={entry.id}
+                                className={clsx(
+                                    'flex flex-col rounded-xl border transition-colors',
+                                    entry.pinned ? 'border-dz-primary/40 bg-[#141414]' : 'border-[#27272a] bg-[#141414]'
+                                )}
+                            >
+                                {/* Card Body */}
                                 <div
-                                    key={entry.id}
-                                    className={clsx(
-                                        'group relative flex flex-col gap-3 rounded-xl border p-4 transition-all cursor-pointer',
-                                        isSelected
-                                            ? 'border-dz-primary bg-dz-primary/10'
-                                            : 'border-[#2e2e2e] bg-[#1a1a1a] hover:border-[#3a3a3a] hover:bg-[#1e1e1e]'
-                                    )}
+                                    className="p-5 flex-1 cursor-pointer"
                                     onClick={() => openEdit(entry)}
                                 >
-                                    {/* Checkbox */}
-                                    <div
-                                        className="absolute top-3 right-3"
-                                        onClick={e => { e.stopPropagation(); toggleSelect(entry.id) }}
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            checked={isSelected}
-                                            onChange={() => { }}
-                                            className="h-3.5 w-3.5 rounded border-zinc-600 bg-zinc-900 cursor-pointer"
-                                            style={{ opacity: isSelected ? 1 : 0 }}
-                                        />
-                                    </div>
-
-                                    {/* Number + Link */}
-                                    <div className="flex items-center gap-2 pr-5">
-                                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#27272a] text-[10px] font-bold text-zinc-400">
+                                    {/* Header: No + Topik */}
+                                    <div className="flex items-start gap-2 mb-3">
+                                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#27272a] text-[10px] font-bold text-zinc-400 mt-0.5">
                                             {idx + 1}
                                         </span>
-                                        {entry.link_instagram && (
-                                            <a
-                                                href={entry.link_instagram.startsWith('http') ? entry.link_instagram : `https://${entry.link_instagram}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                onClick={e => e.stopPropagation()}
-                                                className="flex items-center gap-1 text-xs text-sky-400 hover:underline truncate"
-                                            >
-                                                <ExternalLink size={10} className="shrink-0" />
-                                                {entry.link_instagram}
-                                            </a>
+                                        <p className="font-semibold text-[15px] text-white leading-snug">
+                                            {entry.topik || <span className="text-zinc-600 italic">Tanpa Topik</span>}
+                                        </p>
+                                        {entry.pinned && (
+                                            <span className="ml-auto shrink-0 flex items-center gap-1 text-[10px] font-semibold text-dz-primary bg-dz-primary/10 border border-dz-primary/20 px-2 py-0.5 rounded-full mt-0.5">
+                                                <Pin size={9} />Pinned
+                                            </span>
                                         )}
                                     </div>
 
-                                    <div className="border-t border-[#2e2e2e]" />
+                                    {/* Link */}
+                                    {entry.link_instagram && (
+                                        <a
+                                            href={entry.link_instagram.startsWith('http') ? entry.link_instagram : `https://${entry.link_instagram}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={e => e.stopPropagation()}
+                                            className="flex items-center gap-1 text-xs text-sky-400 hover:underline mb-3 truncate"
+                                        >
+                                            <ExternalLink size={10} className="shrink-0" />
+                                            {entry.link_instagram}
+                                        </a>
+                                    )}
 
-                                    <div className="flex flex-col gap-3">
-                                        <FieldRow label="Topik" value={entry.topik} />
-                                        <FieldRow label="Problem" value={entry.problem} />
-                                        <FieldRow label="Solusi" value={entry.solusi} />
-                                        <FieldRow label="Visual" value={entry.visual} />
-                                        <FieldRow label="Hook Script" value={entry.hook_script} />
-                                    </div>
+                                    {/* Problem */}
+                                    {entry.problem && (
+                                        <div className="mb-2">
+                                            <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-600">Problem</span>
+                                            <p className="text-xs text-zinc-400 mt-0.5 line-clamp-2 leading-relaxed">{entry.problem}</p>
+                                        </div>
+                                    )}
 
-                                    <p className="mt-auto pt-1 text-[10px] text-zinc-700 group-hover:text-zinc-600 transition-colors">
-                                        Klik untuk edit
-                                    </p>
+                                    {/* Solusi */}
+                                    {entry.solusi && (
+                                        <div>
+                                            <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-600">Solusi</span>
+                                            <p className="text-xs text-zinc-400 mt-0.5 line-clamp-2 leading-relaxed">{entry.solusi}</p>
+                                        </div>
+                                    )}
                                 </div>
-                            )
-                        })}
+
+                                {/* Card Footer */}
+                                <div className="px-4 py-3 border-t border-[#27272a] flex justify-between items-center bg-[#111] rounded-b-xl">
+                                    <span className="text-xs text-zinc-600">
+                                        {entry.created_at ? new Date(entry.created_at).toLocaleDateString('id-ID') : '—'}
+                                    </span>
+                                    <div className="flex gap-1">
+                                        <button
+                                            onClick={(e) => handleTogglePin(entry.id, entry.pinned ?? false, e)}
+                                            className={clsx(
+                                                'p-2 rounded transition-colors cursor-pointer',
+                                                entry.pinned ? 'text-dz-primary' : 'text-zinc-500 hover:text-white'
+                                            )}
+                                            title={entry.pinned ? 'Unpin' : 'Pin'}
+                                        >
+                                            <Pin size={14} />
+                                        </button>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); openEdit(entry) }}
+                                            className="p-2 text-zinc-500 hover:text-white transition-colors cursor-pointer"
+                                            title="Edit"
+                                        >
+                                            <Pencil size={14} />
+                                        </button>
+                                        <button
+                                            onClick={(e) => handleDeleteOne(entry.id, e)}
+                                            className="p-2 text-zinc-500 hover:text-red-400 transition-colors cursor-pointer"
+                                            title="Hapus"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 )}
             </div>
