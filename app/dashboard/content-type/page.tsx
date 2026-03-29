@@ -156,7 +156,7 @@ interface SidebarFormProps {
 }
 
 function SidebarForm({ open, mode, initialData, tables, competitors, defaultTableId, onClose, onSaved }: SidebarFormProps) {
-    const [form, setForm] = useState({ topik: '', link_instagram: '', views: '', table_id: '', deskripsi: '', competitor_id: '', content_type: '' })
+    const [form, setForm] = useState({ topik: '', link_instagram: '', views: '', table_id: '', jenis: '', deskripsi: '', competitor_id: '', content_type: '' })
     const [isSaving, setIsSaving] = useState(false)
     const [saveError, setSaveError] = useState<string | null>(null)
     const [showCompetitorPicker, setShowCompetitorPicker] = useState(false)
@@ -169,12 +169,13 @@ function SidebarForm({ open, mode, initialData, tables, competitors, defaultTabl
                     link_instagram: initialData.link_instagram || '',
                     views: initialData.views != null ? String(initialData.views) : '',
                     table_id: initialData.table_id || defaultTableId,
+                    jenis: initialData.jenis || '',
                     deskripsi: initialData.deskripsi || '',
                     competitor_id: initialData.competitor_id || '',
                     content_type: initialData.content_type || '',
                 })
             } else {
-                setForm({ topik: '', link_instagram: '', views: '', table_id: defaultTableId === 'all' ? '' : defaultTableId, deskripsi: '', competitor_id: '', content_type: '' })
+                setForm({ topik: '', link_instagram: '', views: '', table_id: defaultTableId === 'all' ? '' : defaultTableId, jenis: '', deskripsi: '', competitor_id: '', content_type: '' })
             }
         }
     }, [open, mode, initialData, defaultTableId])
@@ -189,6 +190,7 @@ function SidebarForm({ open, mode, initialData, tables, competitors, defaultTabl
                 link_instagram: form.link_instagram.trim(),
                 views: parseInt(form.views.replace(/\D/g, ''), 10) || 0,
                 table_id: form.table_id,
+                jenis: form.jenis || null,
                 deskripsi: form.deskripsi.trim() || null,
                 competitor_id: form.competitor_id || null,
                 content_type: form.content_type || null,
@@ -270,6 +272,21 @@ function SidebarForm({ open, mode, initialData, tables, competitors, defaultTabl
                             className="w-full rounded-lg bg-[#1f1f1f] border border-[#3a3a3a] px-3 py-2 text-sm text-white outline-none focus:border-dz-primary transition-colors appearance-none"
                         >
                             <option value="" disabled>Pilih Grup...</option>
+                            {contentTypeTables.map(t => (
+                                <option key={t.id} value={t.id}>{t.title}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Jenis */}
+                    <div>
+                        <label className="block text-xs text-zinc-400 mb-1.5">Jenis</label>
+                        <select
+                            value={form.jenis}
+                            onChange={e => setForm(p => ({ ...p, jenis: e.target.value }))}
+                            className="w-full rounded-lg bg-[#1f1f1f] border border-[#3a3a3a] px-3 py-2 text-sm text-white outline-none focus:border-dz-primary transition-colors appearance-none"
+                        >
+                            <option value="">— Pilih Jenis —</option>
                             {contentTypeTables.map(t => (
                                 <option key={t.id} value={t.id}>{t.title}</option>
                             ))}
