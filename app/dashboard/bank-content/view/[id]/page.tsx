@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Pencil, Loader2 } from 'lucide-react'
+import { ArrowLeft, Pencil, Loader2, Copy, Check } from 'lucide-react'
 import clsx from 'clsx'
 import { BankContent, BankContentStatus } from '@/lib/types'
 
@@ -38,6 +38,46 @@ function ViewField({ label, value, empty = '—', wide }: {
                 <p className="text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed">{value}</p>
             ) : (
                 <p className="text-sm text-zinc-600 italic">{empty}</p>
+            )}
+        </div>
+    )
+}
+
+function CopyField({ label, value, wide }: {
+    label: string; value?: string | null; wide?: boolean
+}) {
+    const [copied, setCopied] = useState(false)
+
+    const handleCopy = () => {
+        if (!value) return
+        navigator.clipboard.writeText(value)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+    }
+
+    return (
+        <div className={wide ? 'md:col-span-2' : ''}>
+            <div className="flex items-center justify-between mb-1.5">
+                <p className="text-xs text-zinc-500 font-medium uppercase tracking-wide">{label}</p>
+                {value && (
+                    <button
+                        onClick={handleCopy}
+                        className={clsx(
+                            'flex items-center gap-1 rounded-md px-2 py-0.5 text-xs transition-colors cursor-pointer',
+                            copied
+                                ? 'text-green-400 bg-green-900/30'
+                                : 'text-zinc-500 hover:text-white hover:bg-[#2a2a2a]'
+                        )}
+                    >
+                        {copied ? <Check size={11} /> : <Copy size={11} />}
+                        {copied ? 'Tersalin!' : 'Salin'}
+                    </button>
+                )}
+            </div>
+            {value ? (
+                <p className="text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed">{value}</p>
+            ) : (
+                <p className="text-sm text-zinc-600 italic">—</p>
             )}
         </div>
     )
@@ -132,9 +172,9 @@ export default function BankContentViewPage() {
 
                     {/* [Additional Card] */}
                     <ViewSection title="Additional Card">
-                        <ViewField label="AI Style" value={content.ai_style} />
-                        <ViewField label="VO Script" value={content.vo_script} />
-                        <ViewField label="Caption" value={content.caption} wide />
+                        <CopyField label="AI Style" value={content.ai_style} />
+                        <CopyField label="VO Script" value={content.vo_script} />
+                        <CopyField label="Caption" value={content.caption} wide />
                     </ViewSection>
 
                 </div>

@@ -74,7 +74,11 @@ export function BankContentQuickEditSidebar({
             const updated: BankContent = await res.json()
             onSave(updated)
             setSaved(true)
-            setTimeout(() => setSaved(false), 2000)
+            // Tutup sidebar setelah feedback singkat
+            setTimeout(() => {
+                setSaved(false)
+                onClose()
+            }, 1000)
         } catch (err) {
             console.error(err)
         } finally {
@@ -84,8 +88,9 @@ export function BankContentQuickEditSidebar({
 
     return (
         <>
+            {/* Backdrop — semua screen size, tutup saat klik luar */}
             {isOpen && (
-                <div className="fixed inset-0 z-40 bg-black/40 xl:hidden" onClick={onClose} />
+                <div className="fixed inset-0 z-40" onClick={onClose} />
             )}
             <aside className={clsx(
                 'fixed right-0 top-0 z-50 h-screen w-full max-w-[420px] flex flex-col bg-[#161616] border-l border-[#27272a] shadow-2xl transition-transform duration-300 ease-in-out',

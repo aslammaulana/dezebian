@@ -141,7 +141,7 @@ export default function BankContentPage() {
 
                                         {/* Topik Masalah — klik untuk quick edit */}
                                         <td
-                                            className="px-4 py-3 text-white font-medium cursor-pointer hover:text-dz-primary transition-colors"
+                                            className="px-4 py-3 text-white font-medium cursor-pointer hover:underline hover:text-white/80 transition-colors"
                                             onClick={() => setQuickEditContent(item)}
                                         >
                                             {item.topik_masalah}
