@@ -96,6 +96,13 @@ export default function BankContentPage() {
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                         placeholder="Cari topik masalah..."
+                        autoComplete="off"
+                        onFocus={e => {
+                            // Cegah keyboard auto-terbuka di mobile saat halaman baru dimuat
+                            if (!search && document.activeElement === e.target && performance.now() < 2000) {
+                                e.target.blur()
+                            }
+                        }}
                         className="w-full max-w-xs rounded-lg bg-[#1f1f1f] border border-[#3a3a3a] px-3 py-1.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-dz-primary transition-colors"
                     />
                     <button
@@ -152,7 +159,7 @@ export default function BankContentPage() {
                                             className="px-4 py-3 font-medium cursor-pointer hover:underline hover:text-white/80 transition-colors"
                                             onClick={() => setQuickEditContent(item)}
                                         >
-                                            <span className="block max-w-[280px] truncate text-white">{item.topik_masalah}</span>
+                                            <span className="block max-w-[200px] truncate text-white md:max-w-none md:whitespace-normal md:overflow-visible">{item.topik_masalah}</span>
                                         </td>
 
                                         {/* Status Badge */}
