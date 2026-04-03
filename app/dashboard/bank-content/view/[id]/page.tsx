@@ -6,7 +6,7 @@ import { ArrowLeft, Pencil, Loader2, Copy, Check } from 'lucide-react'
 import clsx from 'clsx'
 import { BankContent, BankContentStatus } from '@/lib/types'
 
-// ─── Status badge config ─────────────────────────────────────────────────────
+// ─── Status badge ────────────────────────────────────────────────────────────
 const STATUS_BADGE: Record<BankContentStatus, string> = {
     'Draft': 'text-zinc-400 bg-zinc-800 border-zinc-700',
     'Development': 'text-blue-400 bg-blue-900/40 border-blue-800',
@@ -14,37 +14,29 @@ const STATUS_BADGE: Record<BankContentStatus, string> = {
     'Published': 'text-green-400 bg-green-900/40 border-green-800',
 }
 
-// ─── View helpers ─────────────────────────────────────────────────────────────
-function ViewSection({ title, children }: { title: string; children: React.ReactNode }) {
-    return (
-        <div className="rounded-xl border border-[#27272a] flex flex-col bg-[#1a1a1a]">
-            <div className="px-5 py-3 border-b border-[#27272a] bg-[#141414] rounded-t-xl">
-                <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-500">{title}</h2>
-            </div>
-            <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
-                {children}
-            </div>
-        </div>
-    )
-}
-
-function ViewField({ label, value, empty = '—', wide }: {
-    label: string; value?: string | null; empty?: string; wide?: boolean
+// ─── Per-field Card ────────────────────────────────────────────────────────────
+function FieldCard({ label, value, className }: {
+    label: string; value?: string | null; className?: string
 }) {
     return (
-        <div className={wide ? 'md:col-span-2' : ''}>
-            <p className="text-xs text-zinc-500 mb-1.5 font-medium uppercase tracking-wide">{label}</p>
-            {value ? (
-                <p className="text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed">{value}</p>
-            ) : (
-                <p className="text-sm text-zinc-600 italic">{empty}</p>
-            )}
+        <div className={clsx('rounded-lg border border-[#27272a] bg-[#1a1a1a] flex flex-col', className)}>
+            <div className="px-4 py-2 border-b border-[#27272a] bg-[#141414] rounded-t-lg">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">{label}</p>
+            </div>
+            <div className="px-4 py-3 flex-1">
+                {value ? (
+                    <p className="text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed">{value}</p>
+                ) : (
+                    <p className="text-sm text-zinc-600 italic">—</p>
+                )}
+            </div>
         </div>
     )
 }
 
-function CopyField({ label, value, wide }: {
-    label: string; value?: string | null; wide?: boolean
+// ─── Copyable Card ─────────────────────────────────────────────────────────────
+function CopyCard({ label, value, className }: {
+    label: string; value?: string | null; className?: string
 }) {
     const [copied, setCopied] = useState(false)
 
@@ -56,9 +48,9 @@ function CopyField({ label, value, wide }: {
     }
 
     return (
-        <div className={wide ? 'md:col-span-2' : ''}>
-            <div className="flex items-center justify-between mb-1.5">
-                <p className="text-xs text-zinc-500 font-medium uppercase tracking-wide">{label}</p>
+        <div className={clsx('rounded-lg border border-[#27272a] bg-[#1a1a1a] flex flex-col', className)}>
+            <div className="px-4 py-2 border-b border-[#27272a] bg-[#141414] rounded-t-lg flex items-center justify-between">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">{label}</p>
                 {value && (
                     <button
                         onClick={handleCopy}
@@ -74,11 +66,13 @@ function CopyField({ label, value, wide }: {
                     </button>
                 )}
             </div>
-            {value ? (
-                <p className="text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed">{value}</p>
-            ) : (
-                <p className="text-sm text-zinc-600 italic">—</p>
-            )}
+            <div className="px-4 py-3 flex-1">
+                {value ? (
+                    <p className="text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed">{value}</p>
+                ) : (
+                    <p className="text-sm text-zinc-600 italic">—</p>
+                )}
+            </div>
         </div>
     )
 }
@@ -134,7 +128,6 @@ export default function BankContentViewPage() {
                         {content.topik_masalah || 'Untitled'}
                     </span>
                 </div>
-
                 <button
                     onClick={() => router.push(`/dashboard/bank-content/edit/${id}`)}
                     className="flex items-center gap-1.5 rounded-lg bg-dz-primary px-4 py-1.5 text-xs font-medium text-white hover:bg-[#007042] transition-colors cursor-pointer shrink-0"
@@ -143,39 +136,47 @@ export default function BankContentViewPage() {
                 </button>
             </div>
 
-            {/* Content — full width, 2-col grid */}
+            {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto scrollbar-thin p-4 md:p-6">
-                <div className="w-full flex flex-col gap-5">
+                <div className="w-full flex flex-col gap-6">
 
-                    {/* [Utama] */}
-                    <ViewSection title="Utama">
-                        {/* Topik Masalah — full width */}
-                        <ViewField label="Topik Masalah" value={content.topik_masalah} wide />
+                    {/* Title + Status */}
+                    <div className="flex flex-col gap-3">
+                        <h1 className="text-2xl font-bold text-white leading-tight">
+                            {content.topik_masalah || 'Untitled'}
+                        </h1>
+                        <span className={clsx(
+                            'self-start inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium',
+                            STATUS_BADGE[content.status] || STATUS_BADGE['Draft']
+                        )}>
+                            {content.status}
+                        </span>
+                    </div>
 
-                        {/* Status badge — full width */}
-                        <div className="md:col-span-2">
-                            <p className="text-xs text-zinc-500 mb-1.5 font-medium uppercase tracking-wide">Status</p>
-                            <span className={clsx(
-                                'inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium',
-                                STATUS_BADGE[content.status] || STATUS_BADGE['Draft']
-                            )}>
-                                {content.status}
-                            </span>
-                        </div>
+                    {/* ── [Utama] Cards ── */}
+                    {/* Row 1: Topik Masalah | Penyebab | CTA */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <FieldCard label="Topik Masalah" value={content.topik_masalah} />
+                        <FieldCard label="Penyebab" value={content.penyebab} />
+                        <FieldCard label="CTA" value={content.cta} />
+                    </div>
 
-                        <ViewField label="Hook" value={content.hook} />
-                        <ViewField label="Penyebab" value={content.penyebab} />
-                        <ViewField label="Solusi" value={content.solusi} />
-                        <ViewField label="Fitur Unggulan" value={content.fitur_unggulan} />
-                        <ViewField label="CTA" value={content.cta} wide />
-                    </ViewSection>
+                    {/* Row 2: Hook | Solusi | Fitur Unggulan */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <FieldCard label="Hook" value={content.hook} />
+                        <FieldCard label="Solusi" value={content.solusi} />
+                        <FieldCard label="Fitur Unggulan" value={content.fitur_unggulan} />
+                    </div>
 
-                    {/* [Additional Card] */}
-                    <ViewSection title="Additional Card">
-                        <CopyField label="AI Style" value={content.ai_style} />
-                        <CopyField label="VO Script" value={content.vo_script} />
-                        <CopyField label="Caption" value={content.caption} wide />
-                    </ViewSection>
+                    {/* ── [Additional Card] ── */}
+                    {/* Row 3: AI Style | Caption */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <CopyCard label="AI Style" value={content.ai_style} />
+                        <CopyCard label="Caption" value={content.caption} />
+                    </div>
+
+                    {/* Row 4: VO Script full width */}
+                    <CopyCard label="VO Script" value={content.vo_script} />
 
                 </div>
             </div>
