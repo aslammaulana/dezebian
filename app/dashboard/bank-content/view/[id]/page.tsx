@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Pencil, Loader2, Copy, Check } from 'lucide-react'
+import { ArrowLeft, Pencil, Loader2, Copy, Check, ClipboardList } from 'lucide-react'
 import clsx from 'clsx'
 import { BankContent, BankContentStatus } from '@/lib/types'
 
@@ -14,28 +14,8 @@ const STATUS_BADGE: Record<BankContentStatus, string> = {
     'Published': 'text-green-400 bg-green-900/40 border-green-800',
 }
 
-// ─── Per-field Card ────────────────────────────────────────────────────────────
+// ─── Field Card (semua dengan tombol Salin) ────────────────────────────────────
 function FieldCard({ label, value, className }: {
-    label: string; value?: string | null; className?: string
-}) {
-    return (
-        <div className={clsx('rounded-lg border border-[#27272a] bg-[#1a1a1a] flex flex-col', className)}>
-            <div className="px-4 py-2 border-b border-[#27272a] bg-[#141414] rounded-t-lg">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">{label}</p>
-            </div>
-            <div className="px-4 py-3 flex-1">
-                {value ? (
-                    <p className="text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed">{value}</p>
-                ) : (
-                    <p className="text-sm text-zinc-600 italic">—</p>
-                )}
-            </div>
-        </div>
-    )
-}
-
-// ─── Copyable Card ─────────────────────────────────────────────────────────────
-function CopyCard({ label, value, className }: {
     label: string; value?: string | null; className?: string
 }) {
     const [copied, setCopied] = useState(false)
@@ -77,6 +57,28 @@ function CopyCard({ label, value, className }: {
     )
 }
 
+// ─── Copy All helper ─────────────────────────────────────────────────────────
+function buildCopyAllText(c: BankContent): string {
+    const line = (label: string, val?: string | null) =>
+        val ? `*${label}:*\n${val}` : null
+
+    const utama = [
+        line('Topik Masalah', c.topik_masalah),
+        line('Hook', c.hook),
+        line('Penyebab', c.penyebab),
+        line('Solusi', c.solusi),
+        line('Fitur Unggulan', c.fitur_unggulan),
+        line('CTA', c.cta),
+    ].filter(Boolean).join('\n')
+
+    const additional = [
+        line('Caption', c.caption),
+        line('VO Script', c.vo_script),
+    ].filter(Boolean).join('\n')
+
+    return [utama, additional].filter(Boolean).join('\n\n---\n\n')
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function BankContentViewPage() {
     const params = useParams()
@@ -85,6 +87,7 @@ export default function BankContentViewPage() {
 
     const [content, setContent] = useState<BankContent | null>(null)
     const [isLoading, setIsLoading] = useState(true)
+    const [copiedAll, setCopiedAll] = useState(false)
 
     useEffect(() => {
         const load = async () => {
@@ -101,6 +104,13 @@ export default function BankContentViewPage() {
         }
         load()
     }, [id])
+
+    const handleCopyAll = () => {
+        if (!content) return
+        navigator.clipboard.writeText(buildCopyAllText(content))
+        setCopiedAll(true)
+        setTimeout(() => setCopiedAll(false), 2000)
+    }
 
     if (isLoading) {
         return (
@@ -128,12 +138,30 @@ export default function BankContentViewPage() {
                         {content.topik_masalah || 'Untitled'}
                     </span>
                 </div>
-                <button
-                    onClick={() => router.push(`/dashboard/bank-content/edit/${id}`)}
-                    className="flex items-center gap-1.5 rounded-lg bg-dz-primary px-4 py-1.5 text-xs font-medium text-white hover:bg-[#007042] transition-colors cursor-pointer shrink-0"
-                >
-                    <Pencil size={13} /> Edit
-                </button>
+
+                <div className="flex items-center gap-2 shrink-0">
+                    {/* Copy All */}
+                    <button
+                        onClick={handleCopyAll}
+                        className={clsx(
+                            'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer',
+                            copiedAll
+                                ? 'text-green-400 bg-green-900/30'
+                                : 'text-zinc-400 border border-[#3a3a3a] hover:text-white hover:border-zinc-500'
+                        )}
+                    >
+                        {copiedAll ? <Check size={13} /> : <ClipboardList size={13} />}
+                        {copiedAll ? 'Tersalin!' : 'Copy All'}
+                    </button>
+
+                    {/* Edit */}
+                    <button
+                        onClick={() => router.push(`/dashboard/bank-content/edit/${id}`)}
+                        className="flex items-center gap-1.5 rounded-lg bg-dz-primary px-4 py-1.5 text-xs font-medium text-white hover:bg-[#007042] transition-colors cursor-pointer"
+                    >
+                        <Pencil size={13} /> Edit
+                    </button>
+                </div>
             </div>
 
             {/* Scrollable Content */}
@@ -153,7 +181,6 @@ export default function BankContentViewPage() {
                         </span>
                     </div>
 
-                    {/* ── [Utama] Cards ── */}
                     {/* Row 1: Topik Masalah | Penyebab | CTA */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <FieldCard label="Topik Masalah" value={content.topik_masalah} />
@@ -168,15 +195,14 @@ export default function BankContentViewPage() {
                         <FieldCard label="Fitur Unggulan" value={content.fitur_unggulan} />
                     </div>
 
-                    {/* ── [Additional Card] ── */}
                     {/* Row 3: AI Style | Caption */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <CopyCard label="AI Style" value={content.ai_style} />
-                        <CopyCard label="Caption" value={content.caption} />
+                        <FieldCard label="AI Style" value={content.ai_style} />
+                        <FieldCard label="Caption" value={content.caption} />
                     </div>
 
                     {/* Row 4: VO Script full width */}
-                    <CopyCard label="VO Script" value={content.vo_script} />
+                    <FieldCard label="VO Script" value={content.vo_script} />
 
                 </div>
             </div>
