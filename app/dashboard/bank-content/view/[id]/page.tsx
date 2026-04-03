@@ -72,7 +72,7 @@ function buildCopyAllText(c: BankContent): string {
     ].filter(Boolean).join('\n')
 
     const additional = [
-        line('AI Style', c.ai_style),
+        line('VO AI Style', c.ai_style),
         line('Caption', c.caption),
         line('VO Script', c.vo_script),
     ].filter(Boolean).join('\n')
