@@ -92,13 +92,27 @@ export default function BankContentViewPage() {
 
     useEffect(() => {
         const load = async () => {
+            // Cek cache sessionStorage dulu — tampil instan
+            try {
+                const cached = sessionStorage.getItem(`bank_content_${id}`)
+                if (cached) {
+                    setContent(JSON.parse(cached))
+                    setIsLoading(false)
+                }
+            } catch { }
+
+            // Fetch fresh di background (silent refresh)
             try {
                 const res = await fetch(`/api/bank-content/${id}`)
                 if (!res.ok) throw new Error('Not found')
-                setContent(await res.json())
+                const fresh: BankContent = await res.json()
+                setContent(fresh)
+                // Update cache
+                try { sessionStorage.setItem(`bank_content_${id}`, JSON.stringify(fresh)) } catch { }
             } catch (err) {
                 console.error(err)
-                router.push('/dashboard/bank-content')
+                // Hanya redirect jika belum ada data cache
+                if (!content) router.push('/dashboard/bank-content')
             } finally {
                 setIsLoading(false)
             }

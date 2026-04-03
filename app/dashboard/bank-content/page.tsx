@@ -26,6 +26,14 @@ export default function BankContentPage() {
     const [quickEditContent, setQuickEditContent] = useState<BankContent | null>(null)
     const [search, setSearch] = useState('')
 
+    // Cache item ke sessionStorage sebelum navigasi agar view/edit instan
+    const navigateTo = (path: string, item: BankContent) => {
+        try {
+            sessionStorage.setItem(`bank_content_${item.id}`, JSON.stringify(item))
+        } catch { }
+        router.push(path)
+    }
+
     const fetchData = useCallback(async () => {
         try {
             const res = await fetch('/api/bank-content')
@@ -121,7 +129,7 @@ export default function BankContentPage() {
                             )}
                         </div>
                     ) : (
-                        <table className="w-full text-sm text-left border-collapse">
+                        <table className="w-full min-w-[640px] text-sm text-left border-collapse">
                             <thead className="sticky top-0 z-10 bg-[#141414] border-b border-[#27272a]">
                                 <tr>
                                     <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500 w-8">#</th>
@@ -137,14 +145,14 @@ export default function BankContentPage() {
                                         className="border-b border-[#1f1f1f] hover:bg-[#1a1a1a] transition-colors group"
                                     >
                                         {/* No */}
-                                        <td className="px-4 py-3 text-zinc-600 text-xs">{idx + 1}</td>
+                                        <td className="px-4 py-3 text-zinc-600 text-xs w-8">{idx + 1}</td>
 
                                         {/* Topik Masalah — klik untuk quick edit */}
                                         <td
-                                            className="px-4 py-3 text-white font-medium cursor-pointer hover:underline hover:text-white/80 transition-colors"
+                                            className="px-4 py-3 font-medium cursor-pointer hover:underline hover:text-white/80 transition-colors"
                                             onClick={() => setQuickEditContent(item)}
                                         >
-                                            {item.topik_masalah}
+                                            <span className="block max-w-[280px] truncate text-white">{item.topik_masalah}</span>
                                         </td>
 
                                         {/* Status Badge */}
@@ -161,7 +169,7 @@ export default function BankContentPage() {
                                         <td className="px-4 py-3 text-right">
                                             <div className="flex items-center justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
                                                 <button
-                                                    onClick={() => router.push(`/dashboard/bank-content/view/${item.id}`)}
+                                                    onClick={() => navigateTo(`/dashboard/bank-content/view/${item.id}`, item)}
                                                     title="View"
                                                     className="flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs text-zinc-400 hover:bg-[#27272a] hover:text-white transition-colors cursor-pointer"
                                                 >
@@ -169,7 +177,7 @@ export default function BankContentPage() {
                                                     View
                                                 </button>
                                                 <button
-                                                    onClick={() => router.push(`/dashboard/bank-content/edit/${item.id}`)}
+                                                    onClick={() => navigateTo(`/dashboard/bank-content/edit/${item.id}`, item)}
                                                     title="Edit"
                                                     className="flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs text-zinc-400 hover:bg-[#27272a] hover:text-white transition-colors cursor-pointer"
                                                 >

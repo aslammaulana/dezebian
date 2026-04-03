@@ -91,20 +91,37 @@ export default function BankContentEditPage() {
     })
 
     useEffect(() => {
+        const FIELDS = Object.keys(form) as (keyof BankContent)[]
+
+        const populate = (content: BankContent) => {
+            const populated: Partial<BankContent> = {}
+            for (const key of FIELDS) {
+                populated[key] = (content[key] ?? '') as any
+            }
+            setForm(populated)
+        }
+
         const load = async () => {
+            // Cek cache sessionStorage dulu — pre-fill form instan
+            try {
+                const cached = sessionStorage.getItem(`bank_content_${id}`)
+                if (cached) {
+                    populate(JSON.parse(cached))
+                    setIsLoading(false)
+                }
+            } catch { }
+
+            // Fetch fresh di background
             try {
                 const res = await fetch(`/api/bank-content/${id}`)
                 if (!res.ok) throw new Error('Not found')
                 const content: BankContent = await res.json()
-                // Populate form, converting null → ''
-                const populated: Partial<BankContent> = {}
-                for (const key of Object.keys(form)) {
-                    populated[key as keyof BankContent] = (content[key as keyof BankContent] ?? '') as any
-                }
-                setForm(populated)
+                populate(content)
+                // Update cache
+                try { sessionStorage.setItem(`bank_content_${id}`, JSON.stringify(content)) } catch { }
             } catch (err) {
                 console.error(err)
-                router.push('/dashboard/bank-content')
+                if (isLoading) router.push('/dashboard/bank-content')
             } finally {
                 setIsLoading(false)
             }
