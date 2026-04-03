@@ -133,7 +133,7 @@ export default function BankContentEditPage() {
             })
             if (!res.ok) throw new Error('Failed to save')
             setSaved(true)
-            setTimeout(() => router.push('/dashboard/bank-content'), 1200)
+            setTimeout(() => router.push(`/dashboard/bank-content/view/${id}`), 1200)
         } catch (err) {
             console.error(err)
             setSaved(false)
