@@ -60,7 +60,7 @@ function FieldCard({ label, value, className }: {
 // ─── Copy All helper ─────────────────────────────────────────────────────────
 function buildCopyAllText(c: BankContent): string {
     const line = (label: string, val?: string | null) =>
-        val ? `*${label}:*\n${val}` : null
+        val ? `**${label}:**\n${val}` : null
 
     const utama = [
         line('Topik Masalah', c.topik_masalah),
