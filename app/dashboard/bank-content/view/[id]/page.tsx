@@ -21,16 +21,18 @@ function ViewSection({ title, children }: { title: string; children: React.React
             <div className="px-5 py-3 border-b border-[#27272a] bg-[#141414] rounded-t-xl">
                 <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-500">{title}</h2>
             </div>
-            <div className="p-5 flex flex-col gap-5">
+            <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
                 {children}
             </div>
         </div>
     )
 }
 
-function ViewField({ label, value, empty = '—' }: { label: string; value?: string | null; empty?: string }) {
+function ViewField({ label, value, empty = '—', wide }: {
+    label: string; value?: string | null; empty?: string; wide?: boolean
+}) {
     return (
-        <div>
+        <div className={wide ? 'md:col-span-2' : ''}>
             <p className="text-xs text-zinc-500 mb-1.5 font-medium uppercase tracking-wide">{label}</p>
             {value ? (
                 <p className="text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed">{value}</p>
@@ -101,16 +103,17 @@ export default function BankContentViewPage() {
                 </button>
             </div>
 
-            {/* Content */}
+            {/* Content — full width, 2-col grid */}
             <div className="flex-1 overflow-y-auto scrollbar-thin p-4 md:p-6">
-                <div className="w-full max-w-4xl mx-auto flex flex-col gap-5">
+                <div className="w-full flex flex-col gap-5">
 
                     {/* [Utama] */}
                     <ViewSection title="Utama">
-                        <ViewField label="Topik Masalah" value={content.topik_masalah} />
+                        {/* Topik Masalah — full width */}
+                        <ViewField label="Topik Masalah" value={content.topik_masalah} wide />
 
-                        {/* Status badge */}
-                        <div>
+                        {/* Status badge — full width */}
+                        <div className="md:col-span-2">
                             <p className="text-xs text-zinc-500 mb-1.5 font-medium uppercase tracking-wide">Status</p>
                             <span className={clsx(
                                 'inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium',
@@ -124,14 +127,14 @@ export default function BankContentViewPage() {
                         <ViewField label="Penyebab" value={content.penyebab} />
                         <ViewField label="Solusi" value={content.solusi} />
                         <ViewField label="Fitur Unggulan" value={content.fitur_unggulan} />
-                        <ViewField label="CTA" value={content.cta} />
+                        <ViewField label="CTA" value={content.cta} wide />
                     </ViewSection>
 
                     {/* [Additional Card] */}
                     <ViewSection title="Additional Card">
                         <ViewField label="AI Style" value={content.ai_style} />
                         <ViewField label="VO Script" value={content.vo_script} />
-                        <ViewField label="Caption" value={content.caption} />
+                        <ViewField label="Caption" value={content.caption} wide />
                     </ViewSection>
 
                 </div>

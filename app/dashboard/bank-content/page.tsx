@@ -6,6 +6,7 @@ import { Loader2, Plus, Eye, Pencil } from 'lucide-react'
 import clsx from 'clsx'
 import { ContentHeader } from '@/components/content-editor/ContentHeader'
 import { BankContentSidebar } from '@/components/bank-content/BankContentSidebar'
+import { BankContentQuickEditSidebar } from '@/components/bank-content/BankContentQuickEditSidebar'
 import { BankContent, BankContentStatus } from '@/lib/types'
 
 // ─── Status config ─────────────────────────────────────────────────────────
@@ -21,7 +22,8 @@ export default function BankContentPage() {
     const router = useRouter()
     const [contents, setContents] = useState<BankContent[]>([])
     const [isLoading, setIsLoading] = useState(true)
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+    const [isInsertOpen, setIsInsertOpen] = useState(false)
+    const [quickEditContent, setQuickEditContent] = useState<BankContent | null>(null)
     const [search, setSearch] = useState('')
 
     const fetchData = useCallback(async () => {
@@ -58,6 +60,10 @@ export default function BankContentPage() {
         setContents(prev => [newItem, ...prev])
     }
 
+    const handleQuickSave = (updated: BankContent) => {
+        setContents(prev => prev.map(c => c.id === updated.id ? updated : c))
+    }
+
     const filtered = contents.filter(c =>
         c.topik_masalah?.toLowerCase().includes(search.toLowerCase())
     )
@@ -85,7 +91,7 @@ export default function BankContentPage() {
                         className="w-full max-w-xs rounded-lg bg-[#1f1f1f] border border-[#3a3a3a] px-3 py-1.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-dz-primary transition-colors"
                     />
                     <button
-                        onClick={() => setIsSidebarOpen(true)}
+                        onClick={() => setIsInsertOpen(true)}
                         className="flex items-center gap-1.5 rounded-lg bg-dz-primary px-4 py-1.5 text-sm font-medium text-white hover:bg-[#007042] transition-colors cursor-pointer shrink-0"
                     >
                         <Plus size={15} />
@@ -107,7 +113,7 @@ export default function BankContentPage() {
                             </div>
                             {!search && (
                                 <button
-                                    onClick={() => setIsSidebarOpen(true)}
+                                    onClick={() => setIsInsertOpen(true)}
                                     className="rounded-lg bg-dz-primary px-5 py-2 text-sm font-medium text-white hover:bg-[#007042] transition-colors cursor-pointer"
                                 >
                                     + Insert Row
@@ -133,8 +139,11 @@ export default function BankContentPage() {
                                         {/* No */}
                                         <td className="px-4 py-3 text-zinc-600 text-xs">{idx + 1}</td>
 
-                                        {/* Topik Masalah */}
-                                        <td className="px-4 py-3 text-white font-medium">
+                                        {/* Topik Masalah — klik untuk quick edit */}
+                                        <td
+                                            className="px-4 py-3 text-white font-medium cursor-pointer hover:text-dz-primary transition-colors"
+                                            onClick={() => setQuickEditContent(item)}
+                                        >
                                             {item.topik_masalah}
                                         </td>
 
@@ -179,14 +188,24 @@ export default function BankContentPage() {
 
             {/* Insert Sidebar */}
             <BankContentSidebar
-                isOpen={isSidebarOpen}
-                onClose={() => setIsSidebarOpen(false)}
+                isOpen={isInsertOpen}
+                onClose={() => setIsInsertOpen(false)}
                 onSubmit={handleCreate}
             />
-            {isSidebarOpen && (
+
+            {/* Quick Edit Sidebar */}
+            <BankContentQuickEditSidebar
+                content={quickEditContent}
+                onClose={() => setQuickEditContent(null)}
+                onSave={handleQuickSave}
+                onOpenFull={(id) => router.push(`/dashboard/bank-content/edit/${id}`)}
+            />
+
+            {/* Desktop backdrop for insert sidebar */}
+            {isInsertOpen && (
                 <div
                     className="fixed inset-0 z-40 hidden xl:block"
-                    onClick={() => setIsSidebarOpen(false)}
+                    onClick={() => setIsInsertOpen(false)}
                 />
             )}
         </div>

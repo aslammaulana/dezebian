@@ -24,18 +24,18 @@ function FormSection({ title, children }: { title: string; children: React.React
             <div className="px-5 py-3 border-b border-[#27272a] bg-[#141414] rounded-t-xl">
                 <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-500">{title}</h2>
             </div>
-            <div className="p-5 flex flex-col gap-4">
+            <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
                 {children}
             </div>
         </div>
     )
 }
 
-function TextField({ label, value, onChange, placeholder, disabled }: {
-    label: string; value: string; onChange: (v: string) => void; placeholder?: string; disabled?: boolean
+function TextField({ label, value, onChange, placeholder, disabled, wide }: {
+    label: string; value: string; onChange: (v: string) => void; placeholder?: string; disabled?: boolean; wide?: boolean
 }) {
     return (
-        <div>
+        <div className={wide ? 'md:col-span-2' : ''}>
             <label className="block text-xs text-zinc-400 mb-1.5">{label}</label>
             <input
                 type="text"
@@ -49,11 +49,11 @@ function TextField({ label, value, onChange, placeholder, disabled }: {
     )
 }
 
-function TextareaField({ label, value, onChange, placeholder, rows = 4, disabled }: {
-    label: string; value: string; onChange: (v: string) => void; placeholder?: string; rows?: number; disabled?: boolean
+function TextareaField({ label, value, onChange, placeholder, rows = 5, disabled, wide }: {
+    label: string; value: string; onChange: (v: string) => void; placeholder?: string; rows?: number; disabled?: boolean; wide?: boolean
 }) {
     return (
-        <div>
+        <div className={wide ? 'md:col-span-2' : ''}>
             <label className="block text-xs text-zinc-400 mb-1.5">{label}</label>
             <textarea
                 value={value}
@@ -209,7 +209,7 @@ export default function BankContentEditPage() {
 
             {/* Scrollable Form */}
             <div className="flex-1 overflow-y-auto scrollbar-thin p-4 md:p-6">
-                <div className="w-full max-w-4xl mx-auto flex flex-col gap-5">
+                <div className="w-full flex flex-col gap-5">
 
                     {/* [Utama] */}
                     <FormSection title="Utama">
@@ -219,27 +219,30 @@ export default function BankContentEditPage() {
                             onChange={set('topik_masalah')}
                             placeholder="Topik masalah konten..."
                             disabled={isSaving}
+                            wide
                         />
-                        <PopoverSelect
-                            label="Status"
-                            value={str('status')}
-                            onChange={set('status')}
-                            options={STATUS_OPTIONS as unknown as string[]}
-                            colorMap={STATUS_COLORS}
-                            disabled={isSaving}
-                        />
-                        <TextareaField label="Hook" value={str('hook')} onChange={set('hook')} placeholder="Hook pembuka konten..." rows={3} disabled={isSaving} />
-                        <TextareaField label="Penyebab" value={str('penyebab')} onChange={set('penyebab')} placeholder="Akar masalah / penyebab..." rows={3} disabled={isSaving} />
-                        <TextareaField label="Solusi" value={str('solusi')} onChange={set('solusi')} placeholder="Solusi yang ditawarkan..." rows={3} disabled={isSaving} />
-                        <TextareaField label="Fitur Unggulan" value={str('fitur_unggulan')} onChange={set('fitur_unggulan')} placeholder="Fitur unggulan yang ditonjolkan..." rows={3} disabled={isSaving} />
-                        <TextareaField label="CTA" value={str('cta')} onChange={set('cta')} placeholder="Call to action..." rows={2} disabled={isSaving} />
+                        <div className="md:col-span-2">
+                            <PopoverSelect
+                                label="Status"
+                                value={str('status')}
+                                onChange={set('status')}
+                                options={STATUS_OPTIONS as unknown as string[]}
+                                colorMap={STATUS_COLORS}
+                                disabled={isSaving}
+                            />
+                        </div>
+                        <TextareaField label="Hook" value={str('hook')} onChange={set('hook')} placeholder="Hook pembuka konten..." rows={5} disabled={isSaving} />
+                        <TextareaField label="Penyebab" value={str('penyebab')} onChange={set('penyebab')} placeholder="Akar masalah / penyebab..." rows={5} disabled={isSaving} />
+                        <TextareaField label="Solusi" value={str('solusi')} onChange={set('solusi')} placeholder="Solusi yang ditawarkan..." rows={5} disabled={isSaving} />
+                        <TextareaField label="Fitur Unggulan" value={str('fitur_unggulan')} onChange={set('fitur_unggulan')} placeholder="Fitur unggulan yang ditonjolkan..." rows={5} disabled={isSaving} />
+                        <TextareaField label="CTA" value={str('cta')} onChange={set('cta')} placeholder="Call to action..." rows={4} disabled={isSaving} wide />
                     </FormSection>
 
                     {/* [Additional Card] */}
                     <FormSection title="Additional Card">
-                        <TextareaField label="AI Style" value={str('ai_style')} onChange={set('ai_style')} placeholder="Gaya penulisan AI..." rows={4} disabled={isSaving} />
-                        <TextareaField label="VO Script" value={str('vo_script')} onChange={set('vo_script')} placeholder="Script voiceover..." rows={5} disabled={isSaving} />
-                        <TextareaField label="Caption" value={str('caption')} onChange={set('caption')} placeholder="Caption untuk postingan..." rows={4} disabled={isSaving} />
+                        <TextareaField label="AI Style" value={str('ai_style')} onChange={set('ai_style')} placeholder="Gaya penulisan AI..." rows={6} disabled={isSaving} />
+                        <TextareaField label="VO Script" value={str('vo_script')} onChange={set('vo_script')} placeholder="Script voiceover..." rows={6} disabled={isSaving} />
+                        <TextareaField label="Caption" value={str('caption')} onChange={set('caption')} placeholder="Caption untuk postingan..." rows={5} disabled={isSaving} wide />
                     </FormSection>
 
                 </div>
