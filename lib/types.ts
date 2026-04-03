@@ -56,3 +56,25 @@ export interface ReelsContent {
     table_id: string
     created_at?: string
 }
+
+// ─── Bank Content ───────────────────────────────────────────────────────────
+
+export type BankContentStatus = 'Draft' | 'Development' | 'Need Review' | 'Published'
+
+export interface BankContent {
+    id: string
+    // [Utama]
+    topik_masalah: string
+    status: BankContentStatus
+    hook?: string | null
+    penyebab?: string | null
+    solusi?: string | null
+    fitur_unggulan?: string | null
+    cta?: string | null
+    // [Additional Card]
+    ai_style?: string | null
+    vo_script?: string | null
+    caption?: string | null
+    // Meta
+    created_at?: string
+}
