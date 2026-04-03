@@ -181,28 +181,29 @@ export default function BankContentViewPage() {
                         </span>
                     </div>
 
-                    {/* Row 1: Topik Masalah | Penyebab | CTA */}
+                    {/* Row 1: Hook | Penyebab | Solusi */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <FieldCard label="Topik Masalah" value={content.topik_masalah} />
+                        <FieldCard label="Hook" value={content.hook} />
                         <FieldCard label="Penyebab" value={content.penyebab} />
+                        <FieldCard label="Solusi" value={content.solusi} />
+                    </div>
+
+                    {/* Row 2: Fitur Unggulan | CTA */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <FieldCard label="Fitur Unggulan" value={content.fitur_unggulan} />
                         <FieldCard label="CTA" value={content.cta} />
                     </div>
 
-                    {/* Row 2: Hook | Solusi | Fitur Unggulan */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <FieldCard label="Hook" value={content.hook} />
-                        <FieldCard label="Solusi" value={content.solusi} />
-                        <FieldCard label="Fitur Unggulan" value={content.fitur_unggulan} />
-                    </div>
-
-                    {/* Row 3: AI Style | Caption */}
+                    {/* Row 3: AI Style | VO Script */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FieldCard label="AI Style" value={content.ai_style} />
-                        <FieldCard label="Caption" value={content.caption} />
+                        <FieldCard label="VO Script" value={content.vo_script} />
                     </div>
 
-                    {/* Row 4: VO Script full width */}
-                    <FieldCard label="VO Script" value={content.vo_script} />
+                    {/* Row 4: Caption (50% kiri) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FieldCard label="Caption" value={content.caption} />
+                    </div>
 
                 </div>
             </div>
