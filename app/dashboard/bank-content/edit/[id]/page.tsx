@@ -240,9 +240,9 @@ export default function BankContentEditPage() {
 
                     {/* [Additional Card] */}
                     <FormSection title="Additional Card">
-                        <TextareaField label="AI Style" value={str('ai_style')} onChange={set('ai_style')} placeholder="Gaya penulisan AI..." rows={6} disabled={isSaving} />
-                        <TextareaField label="VO Script" value={str('vo_script')} onChange={set('vo_script')} placeholder="Script voiceover..." rows={6} disabled={isSaving} />
-                        <TextareaField label="Caption" value={str('caption')} onChange={set('caption')} placeholder="Caption untuk postingan..." rows={5} disabled={isSaving} wide />
+                        <TextareaField label="AI Style" value={str('ai_style')} onChange={set('ai_style')} placeholder="Gaya penulisan AI..." rows={12} disabled={isSaving} />
+                        <TextareaField label="VO Script" value={str('vo_script')} onChange={set('vo_script')} placeholder="Script voiceover..." rows={12} disabled={isSaving} />
+                        <TextareaField label="Caption" value={str('caption')} onChange={set('caption')} placeholder="Caption untuk postingan..." rows={10} disabled={isSaving} wide />
                     </FormSection>
 
                 </div>
