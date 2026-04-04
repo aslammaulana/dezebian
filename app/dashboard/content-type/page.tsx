@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Plus, Trash2, RefreshCw, PanelLeftOpen, PanelLeftClose, ChevronsUpDown, X, Save, Pencil, ExternalLink, Loader2, Eye, FileText, Search, UserSearch } from 'lucide-react'
+import { Plus, Trash2, RefreshCw, PanelLeftOpen, PanelLeftClose, ChevronsUpDown, X, Save, Pencil, ExternalLink, Loader2, Eye, FileText, Search, UserSearch, Download, Upload, ChevronDown } from 'lucide-react'
 import clsx from 'clsx'
+import * as XLSX from 'xlsx'
 
 import { ContentTable } from '@/lib/types'
 import { ContentTypeSidebar } from '@/components/content-type/ContentTypeSidebar'
@@ -482,6 +483,11 @@ export default function ContentTypePage() {
     // Resizer drag state
     const resizingRef = useRef<{ col: keyof typeof DEFAULT_WIDTHS; startX: number; startW: number } | null>(null)
 
+    // Export & Import states
+    const [exportDropdownOpen, setExportDropdownOpen] = useState(false)
+    const [isImporting, setIsImporting] = useState(false)
+    const fileInputRef = useRef<HTMLInputElement>(null)
+
     useEffect(() => {
         if (typeof window !== 'undefined' && window.innerWidth < 768) {
             setIsSidebarOpen(false)
@@ -526,6 +532,143 @@ export default function ContentTypePage() {
     useEffect(() => {
         if (activeTableId) fetchData()
     }, [activeTableId])
+
+    // ─── Export & Import ───────────────────────────────────────────────────────
+    const handleExport = (format: 'json' | 'csv' | 'xlsx') => {
+        setExportDropdownOpen(false)
+        const dataToExport = selectedRows.length > 0
+            ? sorted.filter(r => selectedRows.includes(r.id))
+            : sorted
+
+        if (dataToExport.length === 0) return alert('Tidak ada data untuk diexport.')
+
+        const exportData = dataToExport.map((row, index) => {
+            return {
+                No: index + 1,
+                Topik: row.topik || '',
+                'Link Instagram': row.link_instagram || '',
+                Views: row.views || 0,
+                Jenis: tables.find(t => t.id === row.table_id)?.title || '',
+                Type: row.content_type || '',
+                Competitor: competitors.find(c => c.id === row.competitor_id)?.competitor || '',
+                Periode: formatPeriode(row.bulan, row.tahun),
+                Deskripsi: row.deskripsi || ''
+            }
+        })
+
+        if (format === 'json') {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2))
+            const downloadAnchorNode = document.createElement('a')
+            downloadAnchorNode.setAttribute("href", dataStr)
+            downloadAnchorNode.setAttribute("download", `content_export.json`)
+            document.body.appendChild(downloadAnchorNode)
+            downloadAnchorNode.click()
+            downloadAnchorNode.remove()
+        } else if (format === 'csv') {
+            const worksheet = XLSX.utils.json_to_sheet(exportData)
+            const csv = XLSX.utils.sheet_to_csv(worksheet)
+            const dataStr = "data:text/csv;charset=utf-8," + encodeURIComponent(csv)
+            const downloadAnchorNode = document.createElement('a')
+            downloadAnchorNode.setAttribute("href", dataStr)
+            downloadAnchorNode.setAttribute("download", `content_export.csv`)
+            document.body.appendChild(downloadAnchorNode)
+            downloadAnchorNode.click()
+            downloadAnchorNode.remove()
+        } else if (format === 'xlsx') {
+            const worksheet = XLSX.utils.json_to_sheet(exportData)
+            const workbook = XLSX.utils.book_new()
+            XLSX.utils.book_append_sheet(workbook, worksheet, "ContentData")
+            XLSX.writeFile(workbook, "content_export.xlsx")
+        }
+    }
+
+    const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        setIsImporting(true)
+        try {
+            let parsedData: any[] = []
+
+            if (file.name.toLowerCase().endsWith('.json')) {
+                const text = await file.text()
+                parsedData = JSON.parse(text)
+            } else {
+                const data = await file.arrayBuffer()
+                const workbook = XLSX.read(data)
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]]
+                parsedData = XLSX.utils.sheet_to_json<any>(worksheet)
+            }
+
+            if (!Array.isArray(parsedData) || parsedData.length === 0) {
+                alert('Data kosong atau format salah.')
+                return
+            }
+
+            let success = 0
+            for (const row of parsedData) {
+                const topik = row.Topik || row.topik || row.Topic || row.topic || ''
+                const link_instagram = row['Link Instagram'] || row.link_instagram || row['Link Post'] || row['Link post'] || row.url || ''
+
+                if (!topik && !link_instagram) continue
+                const finalTopik = topik || '-'
+
+                const views = Number(row.Views || row.views) || 0
+                const type = row.Type || row.content_type || row.type || null
+                const deskripsi = row.Deskripsi || row.deskripsi || null
+
+                const jenisName = row.Jenis || row.jenis || ''
+                let table_id = tables.find(t => t.title?.toLowerCase() === jenisName.toLowerCase())?.id || null
+                if (!table_id && activeTableId && activeTableId !== 'all') {
+                    table_id = activeTableId
+                }
+
+                const compName = row.Competitor || row.competitor || ''
+                const competitor_id = competitors.find(c => c.competitor?.toLowerCase() === compName.toLowerCase())?.id || null
+
+                const periodeStr = row.Periode || row.periode || row.Tanggal || row.tanggal || ''
+                let bulan = null
+                let tahun = null
+                if (periodeStr && typeof periodeStr === 'string') {
+                    const parts = periodeStr.split(' ').filter(Boolean)
+                    const monthStr = parts.length >= 3 ? parts[1] : parts[0]
+                    const yearStr = parts.length >= 3 ? parts[2] : parts[1]
+
+                    if (monthStr) {
+                        const mIdx1 = MONTH_NAMES.findIndex(m => m.toLowerCase() === monthStr.toLowerCase())
+                        const mIdx2 = MONTH_NAMES_FULL.findIndex(m => m.toLowerCase() === monthStr.toLowerCase())
+                        if (mIdx1 !== -1) bulan = mIdx1 + 1
+                        else if (mIdx2 !== -1) bulan = mIdx2 + 1
+                    }
+
+                    if (yearStr) {
+                        const y = parseInt(yearStr)
+                        if (!isNaN(y)) tahun = y
+                    }
+                }
+
+                const payload = {
+                    topik: finalTopik, link_instagram, views, table_id, jenis: table_id,
+                    deskripsi, competitor_id, content_type: type, bulan, tahun
+                }
+
+                await fetch('/api/content-types', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                })
+                success++
+            }
+            alert(`Berhasil import ${success} data!`)
+            fetchData()
+        } catch (error) {
+            console.error('Import error', error)
+            alert('Gagal mengimport data. Coba cek format file.')
+        } finally {
+            setIsImporting(false)
+            if (fileInputRef.current) fileInputRef.current.value = ''
+        }
+    }
 
     // ─── Table Management ──────────────────────────────────────────────────────
     const handleCreateTable = async (title: string) => {
@@ -787,8 +930,49 @@ export default function ContentTypePage() {
                                     </div>
                                 </div>
 
-                                {/* Actions: Refresh + Tambah */}
-                                <div className="ml-auto flex items-center gap-1 pr-3 shrink-0">
+                                {/* Actions: Export, Import, Refresh, Tambah */}
+                                <div className="ml-auto flex items-center gap-1.5 pr-3 shrink-0">
+                                    {/* Export Dropdown */}
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setExportDropdownOpen(!exportDropdownOpen)}
+                                            className="flex items-center gap-1.5 rounded-lg border border-[#3a3a3a] px-3 py-1.5 text-xs text-zinc-300 hover:text-white hover:bg-[#27272a] transition-colors cursor-pointer"
+                                        >
+                                            <Download size={13} /> Export
+                                            <ChevronDown size={11} className={clsx('transition-transform', exportDropdownOpen && 'rotate-180')} />
+                                        </button>
+                                        {exportDropdownOpen && (
+                                            <>
+                                                <div className="fixed inset-0 z-40" onClick={() => setExportDropdownOpen(false)} />
+                                                <div className="absolute right-0 top-full mt-1.5 w-32 rounded-lg border border-[#3a3a3a] bg-[#1a1a1a] shadow-xl z-50 overflow-hidden py-1">
+                                                    <button onClick={() => handleExport('csv')} className="w-full px-3 py-2 text-left text-xs text-zinc-300 hover:bg-[#27272a] hover:text-white cursor-pointer transition-colors block">CSV</button>
+                                                    <button onClick={() => handleExport('json')} className="w-full px-3 py-2 text-left text-xs text-zinc-300 hover:bg-[#27272a] hover:text-white cursor-pointer transition-colors block">JSON</button>
+                                                    <button onClick={() => handleExport('xlsx')} className="w-full px-3 py-2 text-left text-xs text-zinc-300 hover:bg-[#27272a] hover:text-white cursor-pointer transition-colors block">Excel (.xlsx)</button>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+
+                                    {/* Import Button */}
+                                    <input
+                                        type="file"
+                                        accept=".csv,.json,.xlsx"
+                                        ref={fileInputRef}
+                                        onChange={handleImport}
+                                        className="hidden"
+                                    />
+                                    <button
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={isImporting}
+                                        className="flex items-center gap-1.5 rounded-lg border border-[#3a3a3a] px-3 py-1.5 text-xs text-zinc-300 hover:text-white hover:bg-[#27272a] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Import CSV/JSON/Excel"
+                                    >
+                                        {isImporting ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                                        {isImporting ? 'Importing...' : 'Import'}
+                                    </button>
+
+                                    <div className="w-[1px] h-4 bg-[#3a3a3a] mx-1" />
+
                                     <button
                                         onClick={fetchData}
                                         className={clsx(
