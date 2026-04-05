@@ -869,7 +869,7 @@ export default function ContentTypePage() {
 
                 <main className="flex-1 h-full overflow-hidden flex flex-col bg-dz-background">
                     {/* Top Bar */}
-                    <div className="flex items-center justify-between border-b border-[#27272a] min-h-[50px] bg-[#1A1A1A]">
+                    <div className="relative z-20 flex items-center justify-between border-b border-[#27272a] min-h-[50px] bg-[#1A1A1A]">
                         {selectedRows.length > 0 ? (
                             <div className="flex items-center gap-4 px-2 w-full">
                                 <button
