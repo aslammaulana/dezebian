@@ -881,7 +881,7 @@ export default function ContentTypePage() {
                                 <span className="text-xs text-zinc-500">{selectedRows.length} dipilih</span>
                             </div>
                         ) : (
-                            <div className="flex items-center gap-0 w-full overflow-hidden">
+                            <div className="flex items-center gap-0 w-full min-w-0">
                                 {/* Sidebar toggle */}
                                 <button
                                     onClick={() => setIsSidebarOpen(p => !p)}
