@@ -488,6 +488,12 @@ export default function ContentTypePage() {
     const [isImporting, setIsImporting] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
+    // Pagination
+    const [rowsPerPage, setRowsPerPage] = useState(50)
+    const [currentPage, setCurrentPage] = useState(1)
+    const [rowsPerPageOpen, setRowsPerPageOpen] = useState(false)
+    const ROWS_PER_PAGE_OPTIONS = [50, 100, 200]
+
     useEffect(() => {
         if (typeof window !== 'undefined' && window.innerWidth < 768) {
             setIsSidebarOpen(false)
@@ -532,6 +538,9 @@ export default function ContentTypePage() {
     useEffect(() => {
         if (activeTableId) fetchData()
     }, [activeTableId])
+
+    // Reset to page 1 whenever sorted result changes
+    useEffect(() => { setCurrentPage(1) }, [activeTableId, searchQuery, sortField, sortDir, rowsPerPage])
 
     // ─── Export & Import ───────────────────────────────────────────────────────
     const handleExport = (format: 'json' | 'csv' | 'xlsx') => {
@@ -766,6 +775,11 @@ export default function ContentTypePage() {
             ? String(va).localeCompare(String(vb), undefined, { numeric: true, sensitivity: 'base' })
             : String(vb).localeCompare(String(va), undefined, { numeric: true, sensitivity: 'base' })
     })
+
+    // ─── Pagination slice ──────────────────────────────────────────────────────
+    const totalPages = Math.max(1, Math.ceil(sorted.length / rowsPerPage))
+    const clampedPage = Math.min(currentPage, totalPages)
+    const paginatedRows = sorted.slice((clampedPage - 1) * rowsPerPage, clampedPage * rowsPerPage)
 
     // ─── Column resizing ───────────────────────────────────────────────────────
     const startResize = (col: keyof typeof DEFAULT_WIDTHS, e: React.MouseEvent) => {
@@ -1090,7 +1104,7 @@ export default function ContentTypePage() {
                                                     </td>
                                                 </tr>
                                             ) : (
-                                                sorted.map((row, idx) => (
+                                                paginatedRows.map((row, idx) => (
                                                     <tr
                                                         key={row.id}
                                                         className={clsx(
@@ -1107,7 +1121,7 @@ export default function ContentTypePage() {
                                                             />
                                                         </td>
                                                         {/* No. */}
-                                                        <td className="border border-[#2e2e2e] py-2 px-3 text-zinc-500 text-xs">{idx + 1}</td>
+                                                        <td className="border border-[#2e2e2e] py-2 px-3 text-zinc-500 text-xs">{(clampedPage - 1) * rowsPerPage + idx + 1}</td>
                                                         {/* Topik */}
                                                         <td className="border border-[#2e2e2e] py-2 px-3">
                                                             <span className="block w-full truncate text-sm text-zinc-200">{row.topik || <span className="text-zinc-600 italic">—</span>}</span>
@@ -1220,9 +1234,85 @@ export default function ContentTypePage() {
                                 )}
                             </div>
 
-                            {/* Footer */}
-                            <div className="shrink-0 border-t border-[#27272a] bg-[#1A1A1A] px-4 py-2 text-xs text-zinc-600">
-                                {rows.length} data konten
+                            {/* Footer / Pagination */}
+                            <div className="shrink-0 border-t border-[#27272a] bg-[#1A1A1A] px-4 py-2 flex items-center justify-between gap-4">
+                                {/* Left: info */}
+                                <span className="text-xs text-zinc-600">
+                                    {sorted.length > 0
+                                        ? `${(clampedPage - 1) * rowsPerPage + 1}–${Math.min(clampedPage * rowsPerPage, sorted.length)} dari ${sorted.length} data konten`
+                                        : '0 data konten'
+                                    }
+                                </span>
+
+                                {/* Right: rows-per-page + page nav */}
+                                <div className="flex items-center gap-3">
+                                    {/* Rows per page popover */}
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setRowsPerPageOpen(p => !p)}
+                                            className="flex items-center gap-1.5 rounded-lg border border-[#3a3a3a] bg-[#141414] px-2.5 py-1 text-xs text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors cursor-pointer"
+                                        >
+                                            {rowsPerPage} / halaman
+                                            <ChevronDown size={11} className={clsx('transition-transform', rowsPerPageOpen && 'rotate-180')} />
+                                        </button>
+                                        {rowsPerPageOpen && (
+                                            <>
+                                                <div className="fixed inset-0 z-40" onClick={() => setRowsPerPageOpen(false)} />
+                                                <div className="absolute bottom-full mb-1.5 right-0 w-36 rounded-lg border border-[#3a3a3a] bg-[#1a1a1a] shadow-xl z-50 overflow-hidden py-1">
+                                                    {ROWS_PER_PAGE_OPTIONS.map(opt => (
+                                                        <button
+                                                            key={opt}
+                                                            onClick={() => { setRowsPerPage(opt); setCurrentPage(1); setRowsPerPageOpen(false) }}
+                                                            className={clsx(
+                                                                'w-full px-3 py-2 text-left text-xs transition-colors cursor-pointer',
+                                                                rowsPerPage === opt
+                                                                    ? 'bg-dz-primary/20 text-white'
+                                                                    : 'text-zinc-400 hover:bg-[#27272a] hover:text-white'
+                                                            )}
+                                                        >
+                                                            {opt} baris
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+
+                                    {/* Page navigation */}
+                                    {totalPages > 1 && (
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={() => setCurrentPage(1)}
+                                                disabled={clampedPage === 1}
+                                                className="px-1.5 py-1 text-xs rounded text-zinc-500 hover:text-white hover:bg-[#27272a] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                                                title="Halaman pertama"
+                                            >«</button>
+                                            <button
+                                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                                disabled={clampedPage === 1}
+                                                className="px-1.5 py-1 text-xs rounded text-zinc-500 hover:text-white hover:bg-[#27272a] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                                                title="Halaman sebelumnya"
+                                            >‹</button>
+
+                                            <span className="px-2 text-xs text-zinc-400">
+                                                {clampedPage} / {totalPages}
+                                            </span>
+
+                                            <button
+                                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                                disabled={clampedPage === totalPages}
+                                                className="px-1.5 py-1 text-xs rounded text-zinc-500 hover:text-white hover:bg-[#27272a] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                                                title="Halaman berikutnya"
+                                            >›</button>
+                                            <button
+                                                onClick={() => setCurrentPage(totalPages)}
+                                                disabled={clampedPage === totalPages}
+                                                className="px-1.5 py-1 text-xs rounded text-zinc-500 hover:text-white hover:bg-[#27272a] disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                                                title="Halaman terakhir"
+                                            >»</button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </>
                     )}
