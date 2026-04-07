@@ -21,6 +21,7 @@ interface ContentType {
     competitor_id: string | null
     bulan: number | null
     tahun: number | null
+    tanggal: number | null
     created_at?: string
 }
 
@@ -42,11 +43,12 @@ function formatViews(n: number): string {
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
 const MONTH_NAMES_FULL = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
 
-function formatPeriode(bulan: number | null, tahun: number | null): string {
-    if (!bulan && !tahun) return '—'
+function formatPeriode(tanggal: number | null, bulan: number | null, tahun: number | null): string {
+    if (!tanggal && !bulan && !tahun) return '—'
+    const d = tanggal ? String(tanggal) : ''
     const b = bulan ? MONTH_NAMES[bulan - 1] : ''
     const t = tahun ? String(tahun) : ''
-    return [b, t].filter(Boolean).join(' ')
+    return [d, b, t].filter(Boolean).join(' ')
 }
 
 // ─── Column widths state ───────────────────────────────────────────────────────
@@ -169,7 +171,7 @@ interface SidebarFormProps {
 }
 
 function SidebarForm({ open, mode, initialData, tables, competitors, defaultTableId, onClose, onSaved }: SidebarFormProps) {
-    const [form, setForm] = useState({ topik: '', link_instagram: '', views: '', table_id: '', jenis: '', deskripsi: '', competitor_id: '', content_type: '', bulan: '', tahun: '' })
+    const [form, setForm] = useState({ topik: '', link_instagram: '', views: '', table_id: '', jenis: '', deskripsi: '', competitor_id: '', content_type: '', bulan: '', tahun: '', tanggal: '' })
     const [isSaving, setIsSaving] = useState(false)
     const [saveError, setSaveError] = useState<string | null>(null)
     const [showCompetitorPicker, setShowCompetitorPicker] = useState(false)
@@ -189,10 +191,11 @@ function SidebarForm({ open, mode, initialData, tables, competitors, defaultTabl
                     content_type: initialData.content_type || '',
                     bulan: initialData.bulan != null ? String(initialData.bulan) : '',
                     tahun: initialData.tahun != null ? String(initialData.tahun) : '',
+                    tanggal: initialData.tanggal != null ? String(initialData.tanggal) : '',
                 })
             } else {
                 const defaultJenis = defaultTableId === 'all' ? '' : defaultTableId
-                setForm({ topik: '', link_instagram: '', views: '', table_id: defaultJenis, jenis: defaultJenis, deskripsi: '', competitor_id: '', content_type: '', bulan: '', tahun: '' })
+                setForm({ topik: '', link_instagram: '', views: '', table_id: defaultJenis, jenis: defaultJenis, deskripsi: '', competitor_id: '', content_type: '', bulan: '', tahun: '', tanggal: '' })
             }
         }
     }, [open, mode, initialData, defaultTableId])
@@ -213,6 +216,7 @@ function SidebarForm({ open, mode, initialData, tables, competitors, defaultTabl
                 content_type: form.content_type || null,
                 bulan: form.bulan ? parseInt(form.bulan) : null,
                 tahun: form.tahun ? parseInt(form.tahun) : null,
+                tanggal: form.tanggal ? parseInt(form.tanggal) : null,
             }
 
             let res: Response
@@ -297,10 +301,19 @@ function SidebarForm({ open, mode, initialData, tables, competitors, defaultTabl
                         </select>
                     </div>
 
-                    {/* Periode: Bulan + Tahun */}
+                    {/* Periode: Tanggal + Bulan + Tahun */}
                     <div>
                         <label className="block text-xs text-zinc-400 mb-1.5">Periode</label>
                         <div className="flex gap-2">
+                            <input
+                                type="number"
+                                value={form.tanggal}
+                                onChange={e => setForm(p => ({ ...p, tanggal: e.target.value }))}
+                                placeholder="Tgl"
+                                min={1}
+                                max={31}
+                                className="w-16 rounded-lg bg-[#1f1f1f] border border-[#3a3a3a] px-3 py-2 text-sm text-white placeholder-zinc-600 outline-none focus:border-dz-primary transition-colors"
+                            />
                             <select
                                 value={form.bulan}
                                 onChange={e => setForm(p => ({ ...p, bulan: e.target.value }))}
@@ -473,9 +486,9 @@ export default function ContentTypePage() {
     // Competitor picker popup state (for table inline)
     const [competitorPickerTarget, setCompetitorPickerTarget] = useState<CompetitorPickerTarget>(null)
 
-    // Sort
-    const [sortField, setSortField] = useState<SortField | null>(null)
-    const [sortDir, setSortDir] = useState<SortDir>('asc')
+    // Sort — default: periode terbaru dulu (desc)
+    const [sortField, setSortField] = useState<SortField | null>('periode')
+    const [sortDir, setSortDir] = useState<SortDir>('desc')
 
     // Column widths
     const [colWidths, setColWidths] = useState(DEFAULT_WIDTHS)
@@ -560,7 +573,8 @@ export default function ContentTypePage() {
                 Jenis: tables.find(t => t.id === row.table_id)?.title || '',
                 Type: row.content_type || '',
                 Competitor: competitors.find(c => c.id === row.competitor_id)?.competitor || '',
-                Periode: formatPeriode(row.bulan, row.tahun),
+                Tanggal: row.tanggal || '',
+                Periode: formatPeriode(row.tanggal, row.bulan, row.tahun),
                 Deskripsi: row.deskripsi || ''
             }
         })
@@ -636,8 +650,14 @@ export default function ContentTypePage() {
                 const competitor_id = competitors.find(c => c.competitor?.toLowerCase() === compName.toLowerCase())?.id || null
 
                 const periodeStr = row.Periode || row.periode || row.Tanggal || row.tanggal || ''
+                let tanggal = null
                 let bulan = null
                 let tahun = null
+                // tanggal kolom terpisah
+                if (row.Tanggal || row.tanggal) {
+                    const tgl = parseInt(row.Tanggal ?? row.tanggal)
+                    if (!isNaN(tgl) && tgl >= 1 && tgl <= 31) tanggal = tgl
+                }
                 if (periodeStr && typeof periodeStr === 'string') {
                     const parts = periodeStr.split(' ').filter(Boolean)
                     const monthStr = parts.length >= 3 ? parts[1] : parts[0]
@@ -658,7 +678,7 @@ export default function ContentTypePage() {
 
                 const payload = {
                     topik: finalTopik, link_instagram, views, table_id, jenis: table_id,
-                    deskripsi, competitor_id, content_type: type, bulan, tahun
+                    deskripsi, competitor_id, content_type: type, bulan, tahun, tanggal
                 }
 
                 await fetch('/api/content-types', {
@@ -751,8 +771,8 @@ export default function ContentTypePage() {
 
         // 'periode' bukan field di ContentType, handle duluan
         if (sortField === 'periode') {
-            const va = (a.tahun ?? 0) * 12 + (a.bulan ?? 0)
-            const vb = (b.tahun ?? 0) * 12 + (b.bulan ?? 0)
+            const va = (a.tahun ?? 0) * 10000 + (a.bulan ?? 0) * 100 + (a.tanggal ?? 0)
+            const vb = (b.tahun ?? 0) * 10000 + (b.bulan ?? 0) * 100 + (b.tanggal ?? 0)
             return sortDir === 'asc' ? va - vb : vb - va
         }
 
@@ -1203,7 +1223,7 @@ export default function ContentTypePage() {
                                                         {/* Periode — read only */}
                                                         <td className="border border-[#2e2e2e] py-2 px-3">
                                                             <span className="text-xs text-zinc-400 font-mono">
-                                                                {formatPeriode(row.bulan, row.tahun)}
+                                                                {formatPeriode(row.tanggal, row.bulan, row.tahun)}
                                                             </span>
                                                         </td>
                                                         {/* Type Inline Select */}
