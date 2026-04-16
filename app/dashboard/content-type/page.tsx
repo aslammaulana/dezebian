@@ -649,44 +649,78 @@ export default function ContentTypePage() {
                 const compName = row.Competitor || row.competitor || ''
                 const competitor_id = competitors.find(c => c.competitor?.toLowerCase() === compName.toLowerCase())?.id || null
 
-                const periodeStr = row.Periode || row.periode || row.Tanggal || row.tanggal || ''
+                // Parse Periode (string "16 Apr 2025") — terpisah dari kolom Tanggal (angka 1-31)
+                const periodeStr = row.Periode || row.periode || ''
                 let tanggal = null
                 let bulan = null
                 let tahun = null
-                // tanggal kolom terpisah
-                if (row.Tanggal || row.tanggal) {
+
+                // Kolom Tanggal: angka 1-31
+                if (row.Tanggal != null || row.tanggal != null) {
                     const tgl = parseInt(row.Tanggal ?? row.tanggal)
                     if (!isNaN(tgl) && tgl >= 1 && tgl <= 31) tanggal = tgl
                 }
-                if (periodeStr && typeof periodeStr === 'string') {
-                    const parts = periodeStr.split(' ').filter(Boolean)
-                    const monthStr = parts.length >= 3 ? parts[1] : parts[0]
-                    const yearStr = parts.length >= 3 ? parts[2] : parts[1]
 
-                    if (monthStr) {
-                        const mIdx1 = MONTH_NAMES.findIndex(m => m.toLowerCase() === monthStr.toLowerCase())
-                        const mIdx2 = MONTH_NAMES_FULL.findIndex(m => m.toLowerCase() === monthStr.toLowerCase())
-                        if (mIdx1 !== -1) bulan = mIdx1 + 1
-                        else if (mIdx2 !== -1) bulan = mIdx2 + 1
-                    }
+                // Parse kolom Bulan (jika ada kolom terpisah)
+                if (row.Bulan != null || row.bulan != null) {
+                    const b = parseInt(row.Bulan ?? row.bulan)
+                    if (!isNaN(b) && b >= 1 && b <= 12) bulan = b
+                }
 
-                    if (yearStr) {
-                        const y = parseInt(yearStr)
-                        if (!isNaN(y)) tahun = y
+                // Parse kolom Tahun (jika ada kolom terpisah)
+                if (row.Tahun != null || row.tahun != null) {
+                    const y = parseInt(row.Tahun ?? row.tahun)
+                    if (!isNaN(y) && y > 1900) tahun = y
+                }
+
+                // Jika kolom Periode berisi string gabungan "16 Apr 2025", parse dari sana
+                if (periodeStr && typeof periodeStr === 'string' && periodeStr !== '—') {
+                    const parts = periodeStr.trim().split(' ').filter(Boolean)
+                    // Format: "TGL BULAN TAHUN" atau "BULAN TAHUN"
+                    if (parts.length >= 3) {
+                        if (!tanggal) {
+                            const tgl = parseInt(parts[0])
+                            if (!isNaN(tgl) && tgl >= 1 && tgl <= 31) tanggal = tgl
+                        }
+                        if (!bulan) {
+                            const monthStr = parts[1]
+                            const mIdx1 = MONTH_NAMES.findIndex(m => m.toLowerCase() === monthStr.toLowerCase())
+                            const mIdx2 = MONTH_NAMES_FULL.findIndex(m => m.toLowerCase() === monthStr.toLowerCase())
+                            if (mIdx1 !== -1) bulan = mIdx1 + 1
+                            else if (mIdx2 !== -1) bulan = mIdx2 + 1
+                        }
+                        if (!tahun) {
+                            const y = parseInt(parts[2])
+                            if (!isNaN(y)) tahun = y
+                        }
+                    } else if (parts.length === 2) {
+                        if (!bulan) {
+                            const mIdx1 = MONTH_NAMES.findIndex(m => m.toLowerCase() === parts[0].toLowerCase())
+                            const mIdx2 = MONTH_NAMES_FULL.findIndex(m => m.toLowerCase() === parts[0].toLowerCase())
+                            if (mIdx1 !== -1) bulan = mIdx1 + 1
+                            else if (mIdx2 !== -1) bulan = mIdx2 + 1
+                        }
+                        if (!tahun) {
+                            const y = parseInt(parts[1])
+                            if (!isNaN(y)) tahun = y
+                        }
                     }
                 }
+
+                // Jika table_id masih null, skip baris ini (data tidak akan tampil tanpa table_id)
+                if (!table_id) continue
 
                 const payload = {
                     topik: finalTopik, link_instagram, views, table_id, jenis: table_id,
                     deskripsi, competitor_id, content_type: type, bulan, tahun, tanggal
                 }
 
-                await fetch('/api/content-types', {
+                const res = await fetch('/api/content-types', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload),
                 })
-                success++
+                if (res.ok) success++
             }
             alert(`Berhasil import ${success} data!`)
             fetchData()
