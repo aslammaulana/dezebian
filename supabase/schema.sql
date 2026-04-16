@@ -97,8 +97,21 @@ create table if not exists content_types (
     deskripsi      text,
     views          int not null default 0,
     table_id       uuid not null references content_tables(id) on delete cascade,
+    competitor_id  uuid references competitors(id) on delete set null,
+    content_type   text,
+    bulan          int,
+    tahun          int,
+    tanggal        int,
     created_at     timestamptz not null default now()
 );
+
+-- Migration (jalankan ini jika tabel sudah ada sebelumnya):
+-- ALTER TABLE content_types
+--   ADD COLUMN IF NOT EXISTS competitor_id uuid REFERENCES competitors(id) ON DELETE SET NULL,
+--   ADD COLUMN IF NOT EXISTS content_type  text,
+--   ADD COLUMN IF NOT EXISTS bulan         int,
+--   ADD COLUMN IF NOT EXISTS tahun         int,
+--   ADD COLUMN IF NOT EXISTS tanggal       int;
 
 -- content_types menggunakan content_tables dengan type = 'content-type'
 -- Buat tabel grup via halaman /dashboard/content-type → sidebar "New Table"
