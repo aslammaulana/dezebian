@@ -943,7 +943,9 @@ export default function ContentTypePage() {
     const totalWidth = 40 + colWidths.no + colWidths.topik + colWidths.edit + colWidths.link_instagram + colWidths.competitor + colWidths.jenis + colWidths.type_col + colWidths.periode + colWidths.views
 
     const activeTable = tables.find(t => t.id === activeTableId)
-    const contentTypeTables = tables.filter(t => t.type === 'content-type')
+    const contentTypeTables = tables
+        .filter(t => t.type === 'content-type')
+        .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'id', { sensitivity: 'base' }))
 
     // ─── JSX ──────────────────────────────────────────────────────────────────
     return (
