@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Compass, Video, Settings, X, Users, Telescope, MessageSquare, BookOpen, BrainCircuit, LayoutList, Library } from "lucide-react"
+import { X, Users, BookOpen, LayoutList, Library, MonitorPlay } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import clsx from "clsx"
@@ -12,12 +12,10 @@ interface SidebarProps {
 }
 
 const menuItems = [
-    { href: "/dashboard", icon: Compass, label: "Dashboard", exact: true },
-    { href: "/dashboard/reels-content", icon: Video, label: "Reels Content", exact: false },
     { href: "/dashboard/bank-content", icon: Library, label: "Bank Content", exact: false },
     { href: "/dashboard/competitor", icon: Users, label: "Competitor", exact: false },
     { href: "/dashboard/content-type", icon: LayoutList, label: "Content Type", exact: false },
-    { href: "/dashboard/chat", icon: MessageSquare, label: "Chat Natasha", exact: false },
+    { href: "/dashboard/atm", icon: MonitorPlay, label: "ATM Browser", exact: false },
     { href: "/dashboard/knowledge", icon: BookOpen, label: "Knowledge Base", exact: false },
 ]
 

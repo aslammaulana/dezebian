@@ -1092,11 +1092,11 @@ export default function ContentTypePage() {
                                             <col style={{ width: colWidths.topik }} />
                                             <col style={{ width: colWidths.edit }} />
                                             <col style={{ width: colWidths.link_instagram }} />
-                                            <col style={{ width: colWidths.competitor }} />
                                             <col style={{ width: colWidths.jenis }} />
+                                            <col style={{ width: colWidths.views }} />
                                             <col style={{ width: colWidths.periode }} />
                                             <col style={{ width: colWidths.type_col }} />
-                                            <col style={{ width: colWidths.views }} />
+                                            <col style={{ width: colWidths.competitor }} />
                                         </colgroup>
                                         <thead className="bg-[#1A1A1A] sticky top-0 z-10">
                                             <tr>
@@ -1133,8 +1133,8 @@ export default function ContentTypePage() {
                                                     />
                                                 </th>
                                                 {renderSortHeader('Link Instagram', 'link_instagram', 'link_instagram')}
-                                                {renderSortHeader('Competitor', 'competitor_id', 'competitor')}
                                                 {renderSortHeader('Jenis', 'table_id', 'jenis')}
+                                                {renderSortHeader('Views', 'views', 'views')}
                                                 {renderSortHeader('Periode', 'periode', 'periode')}
                                                 {/* Type header */}
                                                 <th
@@ -1147,7 +1147,7 @@ export default function ContentTypePage() {
                                                         className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-dz-primary/50 transition-colors"
                                                     />
                                                 </th>
-                                                {renderSortHeader('Views', 'views', 'views')}
+                                                {renderSortHeader('Competitor', 'competitor_id', 'competitor')}
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -1224,23 +1224,6 @@ export default function ContentTypePage() {
                                                                 <span className="text-zinc-600 italic text-sm">—</span>
                                                             )}
                                                         </td>
-                                                        {/* Competitor inline button */}
-                                                        <td className="border border-[#2e2e2e] py-1.5 px-2">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setCompetitorPickerTarget({ rowId: row.id, currentId: row.competitor_id || '' })}
-                                                                className="w-full flex items-center justify-between gap-1 truncate rounded px-1.5 py-1 text-xs transition-colors bg-[#27272a] text-zinc-300 hover:text-white hover:bg-[#3a3a3a] cursor-pointer border border-transparent hover:border-dz-primary/40"
-                                                                title="Pilih Competitor"
-                                                            >
-                                                                <span className="truncate">
-                                                                    {row.competitor_id
-                                                                        ? competitors.find(c => c.id === row.competitor_id)?.competitor || '—'
-                                                                        : '—'
-                                                                    }
-                                                                </span>
-                                                                <UserSearch size={11} className="shrink-0 text-zinc-500" />
-                                                            </button>
-                                                        </td>
                                                         {/* Jenis Inline Select */}
                                                         <td className="border border-[#2e2e2e] py-1.5 px-2">
                                                             <select
@@ -1253,6 +1236,12 @@ export default function ContentTypePage() {
                                                                     <option key={t.id} value={t.id}>{t.title}</option>
                                                                 ))}
                                                             </select>
+                                                        </td>
+                                                        {/* Views */}
+                                                        <td className="border border-[#2e2e2e] py-2 px-3 text-right">
+                                                            <span className="block w-full text-right text-sm font-mono text-zinc-300">
+                                                                {formatViews(row.views)}
+                                                            </span>
                                                         </td>
                                                         {/* Periode — read only */}
                                                         <td className="border border-[#2e2e2e] py-2 px-3">
@@ -1274,11 +1263,22 @@ export default function ContentTypePage() {
                                                                 <option value="VO + Face">VO + Face</option>
                                                             </select>
                                                         </td>
-                                                        {/* Views */}
-                                                        <td className="border border-[#2e2e2e] py-2 px-3 text-right">
-                                                            <span className="block w-full text-right text-sm font-mono text-zinc-300">
-                                                                {formatViews(row.views)}
-                                                            </span>
+                                                        {/* Competitor inline button */}
+                                                        <td className="border border-[#2e2e2e] py-1.5 px-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setCompetitorPickerTarget({ rowId: row.id, currentId: row.competitor_id || '' })}
+                                                                className="w-full flex items-center justify-between gap-1 truncate rounded px-1.5 py-1 text-xs transition-colors bg-[#27272a] text-zinc-300 hover:text-white hover:bg-[#3a3a3a] cursor-pointer border border-transparent hover:border-dz-primary/40"
+                                                                title="Pilih Competitor"
+                                                            >
+                                                                <span className="truncate">
+                                                                    {row.competitor_id
+                                                                        ? competitors.find(c => c.id === row.competitor_id)?.competitor || '—'
+                                                                        : '—'
+                                                                    }
+                                                                </span>
+                                                                <UserSearch size={11} className="shrink-0 text-zinc-500" />
+                                                            </button>
                                                         </td>
                                                     </tr>
                                                 ))
