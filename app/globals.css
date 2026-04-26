@@ -14,39 +14,10 @@
   --font-mono: var(--font-geist-mono);
 }
 
-/* ── Dark mode (default) ───────────────────────────────────────────────── */
-:root,
-.dark {
+:root {
   --background: #171717;
   --foreground: #ededed;
   color-scheme: dark;
-
-  --topbar-bg: #0f0f0f;
-  --topbar-border: #27272a;
-  --topbar-text: #a1a1aa;
-
-  --toggle-track-off: #3f3f46;
-  --toggle-track-on: #006239;
-  --toggle-thumb: #ffffff;
-}
-
-/* ── Light mode ────────────────────────────────────────────────────────── */
-.light {
-  --background: #f4f4f5;
-  --foreground: #09090b;
-  color-scheme: light;
-
-  --topbar-bg: #ffffff;
-  --topbar-border: #e4e4e7;
-  --topbar-text: #71717a;
-
-  --toggle-track-off: #d4d4d8;
-  --toggle-track-on: #006239;
-  --toggle-thumb: #ffffff;
-
-  /* Override dark tailwind utilities in light mode */
-  --color-dz-background: #f4f4f5;
-  --color-dz-border: #e4e4e7;
 }
 
 html,
@@ -59,31 +30,6 @@ body {
 body {
   color: var(--foreground);
   background: var(--background);
-  transition: background 0.25s ease, color 0.25s ease;
-}
-
-/* ── Global Top Bar ────────────────────────────────────────────────────── */
-.global-top-bar {
-  background: var(--topbar-bg);
-  border-color: var(--topbar-border);
-  color: var(--topbar-text);
-  transition: background 0.25s ease, border-color 0.25s ease;
-}
-
-/* ── Theme Toggle Switch ───────────────────────────────────────────────── */
-.theme-toggle-track {
-  background: var(--toggle-track-off);
-  transition: background 0.3s ease;
-}
-
-.dark .theme-toggle-track {
-  background: var(--toggle-track-on);
-}
-
-.theme-toggle-thumb {
-  background: var(--toggle-thumb);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.25s ease;
 }
 
 /* Custom Slim Scrollbar for Tailwind v4 */
