@@ -486,6 +486,11 @@ export default function ContentTypePage() {
     // Competitor picker popup state (for table inline)
     const [competitorPickerTarget, setCompetitorPickerTarget] = useState<CompetitorPickerTarget>(null)
 
+    // Inline topik editing
+    const [editingTopikId, setEditingTopikId] = useState<string | null>(null)
+    const [editingTopikValue, setEditingTopikValue] = useState('')
+    const cancelTopikRef = useRef(false)
+
     // Sort — default: periode terbaru dulu (desc)
     const [sortField, setSortField] = useState<SortField | null>('periode')
     const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -785,6 +790,26 @@ export default function ContentTypePage() {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id, [field]: value }),
+            })
+        } catch { fetchData() }
+    }
+
+    const saveTopik = async (id: string, originalValue: string) => {
+        // Escape was pressed — skip save
+        if (cancelTopikRef.current) {
+            cancelTopikRef.current = false
+            setEditingTopikId(null)
+            return
+        }
+        const trimmed = editingTopikValue.trim()
+        setEditingTopikId(null)
+        if (!trimmed || trimmed === originalValue) return
+        setRows(prev => prev.map(r => r.id === id ? { ...r, topik: trimmed } : r))
+        try {
+            await fetch('/api/content-types', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, topik: trimmed }),
             })
         } catch { fetchData() }
     }
@@ -1176,9 +1201,37 @@ export default function ContentTypePage() {
                                                         </td>
                                                         {/* No. */}
                                                         <td className="border border-[#2e2e2e] py-2 px-3 text-zinc-500 text-xs">{(clampedPage - 1) * rowsPerPage + idx + 1}</td>
-                                                        {/* Topik */}
-                                                        <td className="border border-[#2e2e2e] py-2 px-3">
-                                                            <span className="block w-full truncate text-sm text-zinc-200">{row.topik || <span className="text-zinc-600 italic">—</span>}</span>
+                                                        {/* Topik — inline editable */}
+                                                        <td
+                                                            className="border border-[#2e2e2e] py-1.5 px-2 cursor-text"
+                                                            onClick={() => {
+                                                                if (editingTopikId !== row.id) {
+                                                                    setEditingTopikId(row.id)
+                                                                    setEditingTopikValue(row.topik || '')
+                                                                }
+                                                            }}
+                                                        >
+                                                            {editingTopikId === row.id ? (
+                                                                <input
+                                                                    autoFocus
+                                                                    type="text"
+                                                                    value={editingTopikValue}
+                                                                    onChange={e => setEditingTopikValue(e.target.value)}
+                                                                    onBlur={() => saveTopik(row.id, row.topik)}
+                                                                    onKeyDown={e => {
+                                                                        if (e.key === 'Enter') { e.currentTarget.blur() }
+                                                                        if (e.key === 'Escape') {
+                                                                            cancelTopikRef.current = true
+                                                                            e.currentTarget.blur()
+                                                                        }
+                                                                    }}
+                                                                    className="w-full rounded px-1.5 py-0.5 text-sm text-white bg-[#27272a] border border-dz-primary outline-none"
+                                                                />
+                                                            ) : (
+                                                                <span className="block w-full truncate text-sm text-zinc-200 group-hover:text-white transition-colors">
+                                                                    {row.topik || <span className="text-zinc-600 italic">—</span>}
+                                                                </span>
+                                                            )}
                                                         </td>
                                                         {/* Action: Edit + Deskripsi */}
                                                         <td className="border border-[#2e2e2e] py-1.5 px-2">
