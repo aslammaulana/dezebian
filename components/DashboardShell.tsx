@@ -17,10 +17,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     }, [])
 
     return (
-        <div className="flex h-dvh flex-col bg-dz-background text-white overflow-x-hidden">
+        <div className="flex h-full flex-col bg-dz-background text-white overflow-x-hidden">
             {/* Mobile Header — only shown on mobile */}
             {!isChatRoute && (
-                <div className="fixed top-0 left-0 right-0 z-50 md:hidden">
+                <div className="fixed top-9 left-0 right-0 z-50 md:hidden">
                     <Header onMenuClick={() => setMobileSidebarOpen(prev => !prev)} />
                 </div>
             )}
