@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Save, Loader2 } from 'lucide-react';
 
 interface KnowledgeData {
@@ -18,7 +18,6 @@ interface KnowledgeDrawerProps {
 export function KnowledgeDrawer({ isOpen, onClose, onSubmit, initialData, isSubmitting }: KnowledgeDrawerProps) {
     const [title, setTitle] = useState('');
     const [context, setContext] = useState('');
-    const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -28,8 +27,6 @@ export function KnowledgeDrawer({ isOpen, onClose, onSubmit, initialData, isSubm
             } else {
                 setTitle('');
                 setContext('');
-                const timer = setTimeout(() => inputRef.current?.focus(), 100);
-                return () => clearTimeout(timer);
             }
         }
     }, [isOpen, initialData]);
@@ -66,7 +63,6 @@ export function KnowledgeDrawer({ isOpen, onClose, onSubmit, initialData, isSubm
                                 id="knowledge-title"
                                 required
                                 type="text"
-                                ref={inputRef}
                                 value={title}
                                 onChange={e => setTitle(e.target.value)}
                                 placeholder="Masukkan judul..."
